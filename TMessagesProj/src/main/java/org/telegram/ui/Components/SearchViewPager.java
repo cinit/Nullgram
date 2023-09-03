@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.config.ConfigManager;
 import top.qwq2333.nullgram.utils.Defines;
 
@@ -139,7 +140,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         itemAnimator.setMoveInterpolator(new OvershootInterpolator(1.1f));
         itemAnimator.setTranslationInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
 
-        dialogsSearchAdapter = new DialogsSearchAdapter(context, type, initialDialogsType, itemAnimator, fragment.getAllowGlobalSearch()) {
+        dialogsSearchAdapter = new DialogsSearchAdapter(context, fragment, type, initialDialogsType, itemAnimator, fragment.getAllowGlobalSearch()) {
             @Override
             public void notifyDataSetChanged() {
                 int itemCount = getCurrentItemCount();

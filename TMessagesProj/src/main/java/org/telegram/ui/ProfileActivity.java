@@ -246,6 +246,7 @@ import java.util.zip.ZipOutputStream;
 
 import kotlin.Unit;
 import top.qwq2333.nullgram.activity.MainSettingActivity;
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.config.ConfigManager;
 import top.qwq2333.nullgram.helpers.TranslateHelper;
 import top.qwq2333.nullgram.translate.LanguageDetectorTimeout;
@@ -7683,7 +7684,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!currentChat.restriction_reason.isEmpty()) {
                     restrictionReasonRow = rowCount++;
                 }
-                if (ConfigManager.getBooleanOrFalse(Defines.linkedUser) && ConfigManager.getLongOrDefault(Defines.linkedUserPrefix + getCurrentChat().id, 1145141919810L) != 1145141919810L) {
+                if (Config.linkedUser && ConfigManager.getLongOrDefault(Defines.linkedUserPrefix + getCurrentChat().id, 1145141919810L) != 1145141919810L) {
                     linkedUserRow = rowCount++;
                 }
             }
@@ -8137,7 +8138,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             onlineTextView[2].setVisibility(View.VISIBLE);
-            onlineTextView[3].setVisibility(View.VISIBLE);
+            if (!searchMode) {
+                onlineTextView[3].setVisibility(View.VISIBLE);
+            }
 
             if (previousTransitionFragment != null) {
                 previousTransitionFragment.checkAndUpdateAvatar();
@@ -8515,10 +8518,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (ChatObject.isPublic(chat)) {
                         otherItem.addSubItem(share, R.drawable.msg_share, LocaleController.getString("BotShare", R.string.BotShare));
                     }
-                    if (ConfigManager.getBooleanOrFalse(Defines.channelAlias)) {
+                    if (Config.channelAlias) {
                         otherItem.addSubItem(aliasChannelName, R.drawable.msg_fave, LocaleController.getString("setChannelAliasName", R.string.setChannelAliasName));
                     }
-                    if (ConfigManager.getBooleanOrFalse(Defines.linkedUser)) {
+                    if (Config.linkedUser) {
                         otherItem.addSubItem(setLinkedUser, R.drawable.msg_fave, LocaleController.getString("setLinkedUser", R.string.setLinkedUser));
                     }
                     if (chatInfo != null && chatInfo.linked_chat_id != 0) {
@@ -8816,6 +8819,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         nameTextView[1].setVisibility(View.VISIBLE);
         onlineTextView[1].setVisibility(View.VISIBLE);
         idTextView.setVisibility(View.VISIBLE);
+        onlineTextView[3].setVisibility(View.VISIBLE);
 
         actionBar.onSearchFieldVisibilityChanged(searchTransitionProgress > 0.5f);
         int itemVisibility = searchTransitionProgress > 0.5f ? View.VISIBLE : View.GONE;
@@ -8866,6 +8870,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             nameTextView[1].setAlpha(progressHalf);
             onlineTextView[1].setAlpha(progressHalf);
             idTextView.setAlpha(((float) idTextView.getTag()) * progressHalf);
+            onlineTextView[3].setAlpha(progressHalf);
 
             searchItem.getSearchField().setAlpha(progressHalfEnd);
             if (enter && searchTransitionProgress < 0.7f) {
@@ -8946,6 +8951,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         nameTextView[1].setVisibility(hide);
         onlineTextView[1].setVisibility(hide);
         idTextView.setVisibility(hide);
+        onlineTextView[3].setVisibility(hide);
 
         if (otherItem != null) {
             otherItem.setAlpha(1f);
@@ -11353,7 +11359,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             } else if (chatId != 0) {
                 TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                if (ConfigManager.getBooleanOrFalse(Defines.showBotAPIID)) {
+                if (Config.showBotAPIID) {
                     if (ChatObject.isChannel(chat)) {
                         id = -1000000000000L - chat.id;
                     } else {

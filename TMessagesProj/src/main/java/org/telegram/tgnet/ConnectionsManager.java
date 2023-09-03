@@ -60,10 +60,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.SSLException;
 
-import top.qwq2333.nullgram.config.ConfigManager;
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.helpers.WebSocketHelper;
 import top.qwq2333.nullgram.utils.DatabaseUtils;
-import top.qwq2333.nullgram.utils.Defines;
 import top.qwq2333.nullgram.utils.Log;
 import top.qwq2333.nullgram.utils.Utils;
 
@@ -334,6 +333,15 @@ public class ConnectionsManager extends BaseController {
         if (BuildVars.LOGS_ENABLED) {
 //            FileLog.d("send request " + object + " with token = " + requestToken);
         }
+
+        if (Config.disableSendTyping && (object instanceof TLRPC.TL_messages_setTyping || object instanceof TLRPC.TL_messages_setEncryptedTyping)) {
+            return;
+        }
+
+        if (Config.storyStealthMode && (object instanceof TLRPC.TL_stories_readStories)) {
+            return;
+        }
+
         var user = getUserConfig().getCurrentUser();
         if (user != null && user.bot && DatabaseUtils.isUserOnlyMethod(object)) {
             FileLog.d("skip send request " + object + " user only method");
@@ -383,7 +391,7 @@ public class ConnectionsManager extends BaseController {
                         if (BuildVars.LOGS_ENABLED && error.code != -2000) {
                             FileLog.e(object + " got error " + error.code + " " + error.text);
                         }
-                        if (ConfigManager.getBooleanOrFalse(Defines.showRPCError)) {
+                        if (Config.showRPCError) {
                             Utils.showErrorToast(object, errorText);
                         }
                     }

@@ -68,10 +68,8 @@ import org.telegram.ui.Stories.StoryViewer;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.SortedSet;
 
-import top.qwq2333.nullgram.config.ConfigManager;
-import top.qwq2333.nullgram.utils.Defines;
+import top.qwq2333.gen.Config;
 
 public class CalendarActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -197,7 +195,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
 
                                 holder.storyImage = imageReceiver;
                                 if (storiesPlaceDrawAbove == null) {
-                                    storiesPlaceDrawAbove = (canvas, bounds, alpha) -> {
+                                    storiesPlaceDrawAbove = (canvas, bounds, alpha, opening) -> {
                                         blackoutPaint.setAlpha((int) (80 * alpha));
                                         float r = AndroidUtilities.lerp(0, Math.min(bounds.width(), bounds.height()) / 2f, alpha);
                                         canvas.drawRoundRect(bounds, r, r, blackoutPaint);
@@ -896,7 +894,7 @@ public class CalendarActivity extends BaseFragment implements NotificationCenter
                     PeriodDay periodDay = getDayAtCoord(e.getX(), e.getY());
 
                     if (periodDay != null) {
-                        if (!ConfigManager.getBooleanOrFalse(Defines.disableVibration))
+                        if (!Config.disableVibration)
                             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 
                         Bundle bundle = new Bundle();

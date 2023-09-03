@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.config.ConfigManager;
 import top.qwq2333.nullgram.utils.Defines;
 import top.qwq2333.nullgram.utils.Log;
@@ -99,7 +100,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 128;
+    public final static int LAST_DB_VERSION = 129;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -682,7 +683,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE profile_stories (dialog_id INTEGER, story_id INTEGER, data BLOB, PRIMARY KEY(dialog_id, story_id));").stepThis().dispose();
         database.executeFast("CREATE TABLE archived_stories (story_id INTEGER PRIMARY KEY, data BLOB);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB);").stepThis().dispose();
+        database.executeFast("CREATE TABLE story_drafts (id INTEGER PRIMARY KEY, date INTEGER, data BLOB, type INTEGER);").stepThis().dispose();
 
         database.executeFast("CREATE TABLE story_pushes (uid INTEGER, sid INTEGER, date INTEGER, localName TEXT, flags INTEGER, expire_date INTEGER, PRIMARY KEY(uid, sid));").stepThis().dispose();
 
@@ -710,7 +711,7 @@ public class MessagesStorage extends BaseController {
                 }
             }
             result.dispose();
-            ConfigManager.putBoolean(Defines.hasUpdateDialogFilterDatabase, true);
+            Config.setHasUpdateDialogFilterDatabase(true);
         } catch (Exception e) {
             Log.e(e);
         }
@@ -2609,7 +2610,7 @@ public class MessagesStorage extends BaseController {
                         continue;
                     }
                     flags = filter.flags;
-                    if (ConfigManager.getBooleanOrFalse(Defines.ignoreMutedCount) && (flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
+                    if (Config.ignoreMutedCount && (flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                         flags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
                     }
                 } else {
@@ -5389,7 +5390,7 @@ public class MessagesStorage extends BaseController {
                 }
                 unreadCount = filter.pendingUnreadCount;
                 flags = filter.flags;
-                if (ConfigManager.getBooleanOrFalse(Defines.ignoreMutedCount) && (flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
+                if (Config.ignoreMutedCount && (flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
                     flags |= MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED;
                 }
             } else {

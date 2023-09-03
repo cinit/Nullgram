@@ -180,6 +180,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import kotlin.Unit;
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.config.ConfigManager;
 import top.qwq2333.nullgram.helpers.PasscodeHelper;
 import top.qwq2333.nullgram.ui.BottomBuilder;
@@ -699,7 +700,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         moreButtonView.addSubItem(0, LocaleController.getString("ProxySettings", R.string.ProxySettings));
         moreButtonView.addSubItem(1, LocaleController.getString("BotLogin", R.string.BotLogin));
         moreButtonView.addSubItem(2, LocaleController.getString("QRLoginTitle", R.string.QRLoginTitle));
-        if (ConfigManager.getBooleanOrFalse(Defines.showHiddenSettings))
+        if (Config.showHiddenSettings)
             moreButtonView.addSubItem(3, LocaleController.getString("CustomApiLogin", R.string.customAPI));
         moreButtonView.setDelegate(id -> {
             if (id == 0) {
@@ -708,12 +709,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 setPage(VIEW_BOT_LOGIN, true, null, false);
             } else if (id == 2) {
                 setPage(VIEW_QR_LOGIN, true, null, false);
-            } else if (id == 3 && ConfigManager.getBooleanOrFalse(Defines.showHiddenSettings)) {
+            } else if (id == 3 && Config.showHiddenSettings) {
                 AtomicInteger targetApi = new AtomicInteger(-1);
                 BottomBuilder builder = new BottomBuilder(getParentActivity());
                 EditText[] inputs = new EditText[2];
                 builder.addTitle(LocaleController.getString("customAPI", R.string.customAPI), true, LocaleController.getString("useCustomApiNotice", R.string.useCustomApiNotice));
-                builder.addRadioItem(LocaleController.getString("disableCustonAPI", R.string.disableCustomAPI), ConfigManager.getIntOrDefault(Defines.customAPI, Defines.disableCustomAPI) == Defines.disableCustomAPI, (cell) -> {
+                builder.addRadioItem(LocaleController.getString("disableCustonAPI", R.string.disableCustomAPI), Config.customAPI == Defines.disableCustomAPI, (cell) -> {
                     targetApi.set(0);
                     builder.doRadioCheck(cell);
                     for (EditText input : inputs) {
@@ -721,7 +722,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                     return Unit.INSTANCE;
                 });
-                builder.addRadioItem(LocaleController.getString("useOfficialAPI", R.string.useOfficialAPI), ConfigManager.getIntOrDefault(Defines.customAPI, Defines.disableCustomAPI) == Defines.useTelegramAPI, (cell) -> {
+                builder.addRadioItem(LocaleController.getString("useOfficialAPI", R.string.useOfficialAPI), Config.customAPI == Defines.useTelegramAPI, (cell) -> {
                     targetApi.set(1);
                     builder.doRadioCheck(cell);
                     for (EditText input : inputs) {
@@ -730,7 +731,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     return Unit.INSTANCE;
                 });
 
-                builder.addRadioItem(LocaleController.getString("useCustomAPI", R.string.useCustomAPI), ConfigManager.getIntOrDefault(Defines.customAPI, Defines.disableCustomAPI) == Defines.useCustomAPI, (cell) -> {
+                builder.addRadioItem(LocaleController.getString("useCustomAPI", R.string.useCustomAPI), Config.customAPI == Defines.useCustomAPI, (cell) -> {
                     targetApi.set(3);
                     builder.doRadioCheck(cell);
                     for (EditText input : inputs) {
@@ -741,8 +742,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                 inputs[0] = builder.addEditText("App Id");
                 inputs[0].setInputType(InputType.TYPE_CLASS_NUMBER);
-                if (ConfigManager.getIntOrDefault(Defines.customAppId, 0) != 0) {
-                    inputs[0].setText(ConfigManager.getIntOrDefault(Defines.customAppId, 0));
+                if (Config.customAppId != 0) {
+                    inputs[0].setText(Config.customAppId + "");
                 }
                 inputs[0].addTextChangedListener(new TextWatcher() {
                     @Override
@@ -752,11 +753,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     @Override
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
                         if (StringUtils.isBlank(s.toString())) {
-                            ConfigManager.putInt(Defines.customAppId, 0);
+                            Config.setCustomAppId(0);
                         } else if (!UtilsKt.isNumber(s.toString())) {
                             inputs[0].setText("0");
                         } else {
-                            ConfigManager.putInt(Defines.customAppId,  Integer.parseInt(s.toString()));
+                            Config.setCustomAppId(Integer.parseInt(s.toString()));
                         }
                     }
 
@@ -767,8 +768,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                 inputs[1] = builder.addEditText("App Hash");
                 inputs[1].setFilters(new InputFilter[]{new InputFilter.LengthFilter(Defines.telegramHash.length())});
-                if (!StringUtils.isBlank(ConfigManager.getStringOrDefault(Defines.customAppHash, null))) {
-                    inputs[1].setText(ConfigManager.getStringOrDefault(Defines.customAppHash, "It shouldn't be happened"));
+                if (!StringUtils.isBlank(Config.customAppHash)) {
+                    inputs[1].setText(Config.customAppHash);
                 }
                 inputs[1].addTextChangedListener(new TextWatcher() {
                     @Override
@@ -777,7 +778,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
                     @Override
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        ConfigManager.putString(Defines.customAppHash, s.toString());
+                        Config.setCustomAppHash(s.toString());
                     }
 
                     @Override
@@ -785,7 +786,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                 });
 
-                if (ConfigManager.getIntOrDefault(Defines.customAPI, Defines.disableCustomAPI) <= Defines.useTelegramAPI) {
+                if (Config.customAPI <= Defines.useTelegramAPI) {
                     for (EditText input : inputs) {
                         input.setVisibility(View.GONE);
                     }
@@ -795,17 +796,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 builder.addButton(LocaleController.getString("Set", R.string.Set), (it) -> {
                     int target = targetApi.get();
                     if (target > 2) {
-                        if (ConfigManager.getIntOrDefault(Defines.customAppId, 0) == 0) {
+                        if (Config.customAPI == 0) {
                             inputs[0].requestFocus();
                             AndroidUtilities.showKeyboard(inputs[0]);
                             return Unit.INSTANCE;
-                        } else if (StringUtils.isBlank(ConfigManager.getStringOrDefault(Defines.customAppHash, null))) {
+                        } else if (StringUtils.isBlank(Config.customAppHash)) {
                             inputs[1].requestFocus();
                             AndroidUtilities.showKeyboard(inputs[1]);
                             return Unit.INSTANCE;
                         }
                     }
-                    ConfigManager.putInt(Defines.customAPI, target);
+                    Config.setCustomAPI(target);
                     return Unit.INSTANCE;
                 });
                 builder.show();
@@ -1772,6 +1773,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         ContactsController.getInstance(currentAccount).checkAppAccount();
         MessagesController.getInstance(currentAccount).checkPromoInfo(true);
         ConnectionsManager.getInstance(currentAccount).updateDcSettings();
+        MessagesController.getInstance(currentAccount).loadAppConfig();
 
         if (res.future_auth_token != null) {
             AuthTokensHelper.saveLogInToken(res);
@@ -3088,7 +3090,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             final TLRPC.TL_auth_sendCode req = new TLRPC.TL_auth_sendCode();
             String appHash = BuildVars.APP_HASH;
             int appId = BuildVars.APP_ID;
-            switch(ConfigManager.getIntOrDefault(Defines.customAPI,Defines.disableCustomAPI)){
+            switch(Config.customAPI){
                 case Defines.disableCustomAPI:
                     appId = BuildVars.APP_ID;
                     appHash = BuildVars.APP_HASH;
@@ -3098,9 +3100,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     appHash = Defines.telegramHash;
                     break;
                 case Defines.useCustomAPI:
-                    appId = ConfigManager.getIntOrDefault(Defines.customAppId, BuildVars.APP_ID);
-                    appHash = ConfigManager.getStringOrDefault(Defines.customAppHash,
-                        BuildVars.APP_HASH);
+                    appId = Config.customAppId;
+                    appHash = Config.customAppHash;
                     break;
 
             }
@@ -4307,7 +4308,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 } else if (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_MISSED_CALL) {
                     createTimer();
                 }
-            } else if (currentType == AUTH_TYPE_SMS && (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL)) {
+            } else if (currentType == AUTH_TYPE_SMS && (nextType == AUTH_TYPE_SMS || nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL)) {
                 timeText.setText(LocaleController.formatString("CallAvailableIn", R.string.CallAvailableIn, 2, 0));
                 setProblemTextVisible(time < 1000);
                 timeText.setVisibility(time < 1000 ? GONE : VISIBLE);
@@ -4383,6 +4384,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return;
             }
             codeTime = 15000;
+            if (time > codeTime) {
+                codeTime = time;
+            }
             codeTimer = new Timer();
             lastCodeTime = System.currentTimeMillis();
             codeTimer.schedule(new TimerTask() {
@@ -4445,6 +4449,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             int seconds = time / 1000 - minutes * 60;
                             if (nextType == AUTH_TYPE_CALL || nextType == AUTH_TYPE_FLASH_CALL || nextType == AUTH_TYPE_MISSED_CALL) {
                                 timeText.setText(LocaleController.formatString("CallAvailableIn", R.string.CallAvailableIn, minutes, seconds));
+                            } else if (currentType == AUTH_TYPE_SMS && nextType == AUTH_TYPE_SMS) {
+                                timeText.setText(LocaleController.formatString("ResendSmsAvailableIn", R.string.ResendSmsAvailableIn, minutes, seconds));
                             } else if (nextType == AUTH_TYPE_SMS) {
                                 timeText.setText(LocaleController.formatString("SmsAvailableIn", R.string.SmsAvailableIn, minutes, seconds));
                             }
@@ -4630,7 +4636,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         tryHideProgress(false);
                         nextPressed = false;
                         if (error == null) {
-                            animateSuccess(() -> new AlertDialog.Builder(getParentActivity())
+                            Activity activity = getParentActivity();
+                            if (activity == null) {
+                                return;
+                            }
+                            animateSuccess(() -> new AlertDialog.Builder(activity)
                                     .setTitle(LocaleController.getString(R.string.CancelLinkSuccessTitle))
                                     .setMessage(LocaleController.formatString("CancelLinkSuccess", R.string.CancelLinkSuccess, PhoneFormat.getInstance().format("+" + phone)))
                                     .setPositiveButton(LocaleController.getString(R.string.Close), null)

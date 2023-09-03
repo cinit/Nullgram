@@ -35,7 +35,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.Matrix;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -204,10 +203,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import top.qwq2333.nullgram.config.ConfigManager;
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.utils.AlertUtil;
 import top.qwq2333.nullgram.utils.AnalyticsUtils;
-import top.qwq2333.nullgram.utils.Defines;
 
 public class AndroidUtilities {
     public final static int LIGHT_STATUS_BAR_OVERLAY = 0x0f000000, DARK_STATUS_BAR_OVERLAY = 0x33000000;
@@ -706,6 +704,9 @@ public class AndroidUtilities {
     public static void getViewPositionInParent(View view, ViewGroup parent, float[] pointPosition) {
         pointPosition[0] = 0;
         pointPosition[1] = 0;
+        if (view == null || parent == null) {
+            return;
+        }
         View currentView = view;
         while (currentView != parent) {
             //fix strange offset inside view pager
@@ -732,6 +733,22 @@ public class AndroidUtilities {
         }
         CountDownLatch countDownLatch = new CountDownLatch(1);
         PixelCopy.request(surfaceView, surfaceBitmap, copyResult -> {
+            countDownLatch.countDown();
+        }, Utilities.searchQueue.getHandler());
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public static void getBitmapFromSurface(Surface surface, Bitmap surfaceBitmap) {
+        if (surface == null || !surface.isValid()) {
+            return;
+        }
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        PixelCopy.request(surface, surfaceBitmap, copyResult -> {
             countDownLatch.countDown();
         }, Utilities.searchQueue.getHandler());
         try {
@@ -4712,7 +4729,7 @@ public class AndroidUtilities {
     }
 
     public static boolean shouldShowUrlInAlert(String url) {
-        if (ConfigManager.getBooleanOrFalse(Defines.skipOpenLinkConfirm)) {
+        if (Config.skipOpenLinkConfirm) {
             return false;
         }
         try {
@@ -5450,5 +5467,13 @@ public class AndroidUtilities {
         clone.flip();
         clone.position(position);
         return clone;
+    }
+
+    public static void checkAndroidTheme(Context context, boolean open) {
+        // this hack is done to support prefers-color-scheme in webviews 🤦
+        if (context == null) {
+            return;
+        }
+        context.setTheme(Theme.isCurrentThemeDark() && open ? R.style.Theme_TMessages_Dark : R.style.Theme_TMessages);
     }
 }

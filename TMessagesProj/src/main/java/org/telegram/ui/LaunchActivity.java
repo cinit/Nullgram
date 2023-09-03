@@ -209,6 +209,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import kotlin.Unit;
+import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.config.ConfigManager;
 import top.qwq2333.nullgram.helpers.MonetHelper;
 import top.qwq2333.nullgram.helpers.SettingsHelper;
@@ -3730,7 +3731,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             TLRPC.TL_attachMenuBotsBot attachMenuBotsBot = (TLRPC.TL_attachMenuBotsBot) response1;
                                             MessagesController.getInstance(intentAccount).putUsers(attachMenuBotsBot.users, false);
                                             TLRPC.TL_attachMenuBot attachMenuBot = attachMenuBotsBot.bot;
-                                            BaseFragment lastFragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                            BaseFragment lastFragment_ = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
+                                            if (AndroidUtilities.isTablet() && !(lastFragment_ instanceof ChatActivity) && !rightFragmentsStack.isEmpty()) {
+                                                lastFragment_ = rightFragmentsStack.get(rightFragmentsStack.size() - 1);
+                                            }
+                                            final BaseFragment lastFragment = lastFragment_;
 
                                             List<String> chooserTargets = new ArrayList<>();
                                             if (!TextUtils.isEmpty(attachMenuBotChoose)) {
@@ -5813,7 +5818,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             }
         }
 
-        if (ConfigManager.getBooleanOrFalse(Defines.autoDisableBuiltInProxy)) {
+        if (Config.autoDisableBuiltInProxy) {
             if (SharedConfig.proxyEnabled && Utils.isVPNEnabled()) {
                 SharedConfig.setProxyEnable(false);
             } else if (!Utils.isVPNEnabled()) {
@@ -7135,6 +7140,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         int keyCode = event.getKeyCode();
         if (event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_UP || event.getKeyCode() == KeyEvent.KEYCODE_VOLUME_DOWN) {
             BaseFragment baseFragment = getLastFragment();
+            if (baseFragment != null && baseFragment.overlayStoryViewer != null && baseFragment.overlayStoryViewer.isShown()) {
+                baseFragment.overlayStoryViewer.dispatchKeyEvent(event);
+                return true;
+            }
             if (baseFragment != null && baseFragment.storyViewer != null && baseFragment.storyViewer.isShown()) {
                 baseFragment.storyViewer.dispatchKeyEvent(event);
                 return true;
@@ -7154,7 +7163,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
             } else if (
                 !mainFragmentsStack.isEmpty() && (!PhotoViewer.hasInstance() || !PhotoViewer.getInstance().isVisible()) && event.getRepeatCount() == 0
-                && !ConfigManager.getBooleanOrFalse(Defines.disablePreviewVideoSoundShortcut)
+                && !Config.disablePreviewVideoSoundShortcut
             ) {
                 BaseFragment fragment = mainFragmentsStack.get(mainFragmentsStack.size() - 1);
                 if (fragment instanceof ChatActivity) {
@@ -7470,14 +7479,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public void requestCustomNavigationBar() {
         if (customNavigationBar == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             customNavigationBar = drawerLayoutContainer.createNavigationBar();
-            if (customNavigationBar != null) {
-                FrameLayout decorView = (FrameLayout) getWindow().getDecorView();
-                decorView.addView(customNavigationBar);
-                if (customNavigationBar.getLayoutParams().height != AndroidUtilities.navigationBarHeight || ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin != customNavigationBar.getHeight()) {
-                    customNavigationBar.getLayoutParams().height = AndroidUtilities.navigationBarHeight;
-                    ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin = drawerLayoutContainer.getMeasuredHeight();
-                    customNavigationBar.requestLayout();
-                }
+            FrameLayout decorView = (FrameLayout) getWindow().getDecorView();
+            decorView.addView(customNavigationBar);
+        }
+        if (customNavigationBar != null) {
+            if (customNavigationBar.getLayoutParams().height != AndroidUtilities.navigationBarHeight || ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin != customNavigationBar.getHeight()) {
+                customNavigationBar.getLayoutParams().height = AndroidUtilities.navigationBarHeight;
+                ((FrameLayout.LayoutParams)customNavigationBar.getLayoutParams()).topMargin = drawerLayoutContainer.getMeasuredHeight();
+                customNavigationBar.requestLayout();
             }
         }
     }
