@@ -6,11 +6,6 @@
 
 Nullgram 是一款**自由且开源**的Telegram第三方客户端，基于[NekoX](https://github.com/NekoX-Dev/NekoX)和[Nekogram](https://gitlab.com/Nekogram/Nekogram)制作。
 
-## 为何选择 Nullgram
-天下苦社区分裂久矣。由于很多原因，NekoX和Nekogram社区彻底分裂，再加之Nekogram[^1]和NekoX的主要开发均存在较大问题，我便决定整合两款app的功能，然后便做了Nullgram。
-
-Null的意思是*未初始化、未定义或者不存在*。以Nullgram为名，主要就是为了表达Nullgram没有那么多脑瘫事情。Nullgram不会给你FCM推送"nmsl"[^2]或者其他什么东西，不会发什么乞讨二维码或者机场广告[^4]到频道，不会恶意竞争[^5]捏造事实。
-
 ## 如何贡献
 
 ### 我想加些功能
@@ -32,13 +27,3 @@ Null的意思是*未初始化、未定义或者不存在*。以Nullgram为名，
 务必使用Issue Template。写详细版本号，**我不知道什么是*最新版本***。
 
 你可以用logcat抓取日志。(TAG:  `Nullgram` )
-
-[^1]: https://telegra.ph/%E6%9C%89%E5%85%B3-Nekogram-Lite-%E7%9A%84%E6%95%85%E4%BA%8B-04-09
-
-[^2]:https://sm.ms/image/FAKi3mx6XwqlvRj
-
-[^3]:https://t.me/NekogramX/418
-
-[^4]:https://t.me/zuragram/392
-
-[^5]:https://t.me/sayingArchive/15428
