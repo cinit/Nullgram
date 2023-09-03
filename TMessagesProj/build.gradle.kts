@@ -162,10 +162,9 @@ android {
         }
 
         getByName("debug") {
-            signingConfig = signingConfigs.getByName("release")
             isDefault = true
             isDebuggable = true
-            isJniDebuggable = true
+            isJniDebuggable = false
         }
 
         create("play") {
