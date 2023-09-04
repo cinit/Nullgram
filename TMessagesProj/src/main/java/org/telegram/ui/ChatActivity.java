@@ -24876,6 +24876,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         }
                         processSelectedOption(options.get(i));
                     });
+                    cell.setOnLongClickListener(v1 -> {
+                        if (selectedObject == null || i >= options.size()) {
+                            return false;
+                        }
+                        return processSelectedOptionLongClick(options.get(i));
+                    });
                     if (option == OPTION_TRANSLATE) {
                         // "Translate" button
                         MessageObject messageObject = getMessageUtils().getMessageForTranslate(selectedObject, selectedObjectGroup);
@@ -26506,7 +26512,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 if (checkSlowMode(chatActivityEnterView.getSendButton())) {
                     return;
                 }
-                processRepeatMessage();
+                processRepeatMessage(false);
                 break;
             }
             case Defines.customQuickMessageRow: {
@@ -26607,6 +26613,35 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         selectedObjectGroup = null;
         selectedObjectToEditCaption = null;
         closeMenu(!preserveDim);
+    }
+
+    private boolean processSelectedOptionLongClick(int option) {
+        if (selectedObject == null || getParentActivity() == null) {
+            return false;
+        }
+        boolean handled = true;
+        boolean preserveDim = false;
+        switch (option) {
+            case OPTION_REPEAT: {
+                if (checkSlowMode(chatActivityEnterView.getSendButton())) {
+                    break;
+                }
+                processRepeatMessage(true);
+                break;
+            }
+            default: {
+                // not handled
+                return false;
+            }
+        }
+        if (handled) {
+            selectedObject = null;
+            selectedObjectGroup = null;
+            selectedObjectToEditCaption = null;
+            closeMenu(!preserveDim);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -32620,12 +32655,19 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         return super.hideKeyboardOnShow();
     }
 
-    public boolean processRepeatMessage() {
-        if ((isThreadChat() && !isTopic) || getMessagesController().isChatNoForwards(currentChat) || selectedObject.messageOwner.noforwards) {
+    public boolean processRepeatMessage(boolean noquote) {
+        if ((isThreadChat() && !isTopic) || noquote || getMessagesController().isChatNoForwards(currentChat) || selectedObject.messageOwner.noforwards) {
             var messageObject = getMessageUtils().getMessageForRepeat(selectedObject, selectedObjectGroup);
             if (messageObject != null) {
+                MessageObject replyToMsgObject = null;
+                if (noquote && messageObject.replyMessageObject != null) {
+                    replyToMsgObject = messageObject.replyMessageObject;
+                }
+                if (replyToMsgObject == null) {
+                    replyToMsgObject = threadMessageObject;
+                }
                 if (messageObject.isAnyKindOfSticker() && !messageObject.isAnimatedEmojiStickers() && !messageObject.isAnimatedEmoji() && !messageObject.isDice()) {
-                    getSendMessagesHelper().sendSticker(selectedObject.getDocument(), null, dialog_id, threadMessageObject, threadMessageObject, null, null, true, 0, false, null);
+                    getSendMessagesHelper().sendSticker(selectedObject.getDocument(), null, dialog_id, replyToMsgObject, replyToMsgObject, null, null, true, 0, false, null);
                     return true;
                 } else {
                     var message = messageObject.messageOwner.message;
@@ -32647,7 +32689,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                         } else {
                             entities = null;
                         }
-                        getSendMessagesHelper().sendMessage(SendMessageParams.of(message, dialog_id, threadMessageObject, threadMessageObject, null, false, entities, null, null, true, 0, null, false));
+                        getSendMessagesHelper().sendMessage(SendMessageParams.of(message, dialog_id, replyToMsgObject, replyToMsgObject, null, false, entities, null, null, true, 0, null, false));
                         return true;
                     }
                 }
