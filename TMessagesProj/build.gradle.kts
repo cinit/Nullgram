@@ -1,7 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.api.variant.BuildConfigField
-import com.android.build.api.variant.FilterConfiguration.FilterType.*
+import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.text.SimpleDateFormat
@@ -54,6 +54,7 @@ dependencies {
     implementation(libs.exifinterface)
     implementation(libs.dynamicanimation)
     implementation(libs.interpolator)
+    implementation(libs.fragment)
     implementation(libs.sharetarget)
 
     compileOnly(libs.checker.compat.qual)
@@ -179,7 +180,7 @@ android {
             cmake {
                 version = "3.22.1"
                 arguments += listOf(
-                    "-DANDROID_STL=c++_static", "-DANDROID_PLATFORM=android-21", "-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache", "-DNDK_CCACHE=ccache"
+                    "-DANDROID_STL=c++_static", "-DANDROID_PLATFORM=android-24", "-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache", "-DNDK_CCACHE=ccache"
                 )
             }
         }
@@ -227,6 +228,3 @@ kotlin {
         kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
     }
 }
-
-tasks.register<ReplaceIcon>("replaceIcon") {}
-tasks.getByName("preBuild").dependsOn(tasks.getByName("replaceIcon"))

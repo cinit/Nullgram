@@ -29,6 +29,9 @@ import android.net.NetworkCapabilities
 import android.util.Base64
 import android.view.View
 import android.widget.Toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ApplicationLoader
 import org.telegram.messenger.LocaleController
@@ -44,7 +47,6 @@ import org.telegram.ui.Components.AlertsCreator
 import org.telegram.ui.Components.BulletinFactory
 import top.qwq2333.gen.Config
 import top.qwq2333.nullgram.activity.DatacenterActivity
-import top.qwq2333.nullgram.config.ConfigManager
 import top.qwq2333.nullgram.remote.NicegramController
 import java.io.BufferedReader
 import java.io.File
@@ -195,7 +197,7 @@ object Utils {
                     }
                     if ((SharedConfig.proxyEnabled && vpn) || (!SharedConfig.proxyEnabled && !vpn)) {
                         SharedConfig.setProxyEnable(!vpn)
-                        UIUtil.runOnUIThread {
+                        ApplicationLoader.applicationHandler.post {
                             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged)
                         }
                     }
@@ -305,4 +307,16 @@ fun String.isNumber(): Boolean = try {
     true
 } catch (e: NumberFormatException) {
     false
+}
+
+internal inline fun tryOrLog(block: () -> Unit) = runCatching {
+    block()
+}.onFailure {
+    Log.e(it)
+}
+
+internal inline fun runOnIoDispatcher(crossinline block: ()->Unit) {
+    CoroutineScope(Dispatchers.IO).launch {
+        block()
+    }
 }

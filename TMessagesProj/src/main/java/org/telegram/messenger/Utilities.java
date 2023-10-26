@@ -22,7 +22,9 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +65,6 @@ public class Utilities {
     public native static void blurBitmap(Object bitmap, int radius, int unpin, int width, int height, int stride);
     public native static int needInvert(Object bitmap, int unpin, int width, int height, int stride);
     public native static void calcCDT(ByteBuffer hsvBuffer, int width, int height, ByteBuffer buffer, ByteBuffer calcBuffer);
-    public native static boolean loadWebpImage(Bitmap bitmap, ByteBuffer buffer, int len, BitmapFactory.Options options, boolean unpin);
     public native static int convertVideoFrame(ByteBuffer src, ByteBuffer dest, int destFormat, int width, int height, int padding, int swap);
     private native static void aesIgeEncryption(ByteBuffer buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
     private native static void aesIgeEncryptionByteArray(byte[] buffer, byte[] key, byte[] iv, boolean encrypt, int offset, int length);
@@ -507,8 +508,20 @@ public class Utilities {
         public void run(T arg);
     }
 
+    public static interface CallbackVoidReturn<ReturnType> {
+        public ReturnType run();
+    }
+
     public static interface CallbackReturn<Arg, ReturnType> {
         public ReturnType run(Arg arg);
+    }
+
+    public static interface Callback2Return<T1, T2, ReturnType> {
+        public ReturnType run(T1 arg, T2 arg2);
+    }
+
+    public static interface Callback3Return<T1, T2, T3, ReturnType> {
+        public ReturnType run(T1 arg, T2 arg2, T3 arg3);
     }
 
     public static interface Callback2<T, T2> {
@@ -521,6 +534,9 @@ public class Utilities {
 
     public static interface Callback4<T, T2, T3, T4> {
         public void run(T arg, T2 arg2, T3 arg3, T4 arg4);
+    }
+    public static interface Callback5<T, T2, T3, T4, T5> {
+        public void run(T arg, T2 arg2, T3 arg3, T4 arg4, T5 arg5);
     }
 
     public static <Key, Value> Value getOrDefault(HashMap<Key, Value> map, Key key, Value defaultValue) {
@@ -567,4 +583,9 @@ public class Utilities {
         }
         return videoPlayerQueue;
     }
+
+    public static boolean isNullOrEmpty(final Collection<?> list) {
+        return list == null || list.isEmpty();
+    }
+
 }
