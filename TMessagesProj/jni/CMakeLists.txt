@@ -488,7 +488,6 @@ target_link_libraries(${NATIVE_LIB}
         tgcalls
         tgcalls_tp
         tgnet
-        webp
         flac
         rlottie
         sqlite
