@@ -89,7 +89,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import top.qwq2333.gen.Config;
-import top.qwq2333.nullgram.ui.syntaxhighlight.SyntaxHighlight;
 import top.qwq2333.nullgram.utils.StringUtils;
 
 public class MessageObject {

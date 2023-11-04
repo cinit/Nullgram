@@ -58,7 +58,6 @@ public class ExperimentSettingActivity extends BaseActivity {
     private int disableSendTypingRow;
     private int storyStealthModeRow;
     private int keepOnlineStatusAsRow;
-    private int syntaxHighlightRow;
     private int aliasChannelRow;
     private int keepFormattingRow;
     private int enchantAudioRow;
@@ -110,11 +109,6 @@ public class ExperimentSettingActivity extends BaseActivity {
             Config.toggleDisableSendTyping();
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(Config.disableSendTyping);
-            }
-        } else if (position == syntaxHighlightRow) {
-            Config.toggleCodeSyntaxHighlight();
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(Config.codeSyntaxHighlight);
             }
         }
         if (position == disableFilteringRow) {
@@ -241,7 +235,6 @@ public class ExperimentSettingActivity extends BaseActivity {
 
         experimentRow = addRow();
         disableFilteringRow = sensitiveCanChange ? addRow("disableFiltering") : -1;
-        syntaxHighlightRow = addRow("syntaxHighlight");
         aliasChannelRow = addRow("aliasChannel");
         keepFormattingRow = addRow("keepFormatting");
         enchantAudioRow = addRow("enchantAudio");
@@ -351,10 +344,6 @@ public class ExperimentSettingActivity extends BaseActivity {
                     } else if (position == storyStealthModeRow) {
                         textCell.setTextAndCheck(LocaleController.getString("storyStealthMode", R.string.storyStealthMode),
                             Config.storyStealthMode, true);
-                    } else if (position == syntaxHighlightRow) {
-                        textCell.setTextAndValueAndCheck(LocaleController.getString("codeSyntaxHighlight", R.string.codeSyntaxHighlight),
-                            LocaleController.getString("codeSyntaxHighlightDetails", R.string.codeSyntaxHighlightDetails),
-                            Config.codeSyntaxHighlight, true, true);
                     }
                     if (position == disableFilteringRow) {
                         textCell.setTextAndValueAndCheck(LocaleController.getString("SensitiveDisableFiltering", R.string.SensitiveDisableFiltering),

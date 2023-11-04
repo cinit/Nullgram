@@ -176,7 +176,6 @@ import java.util.List;
 import java.util.Locale;
 
 import top.qwq2333.gen.Config;
-import top.qwq2333.nullgram.ui.syntaxhighlight.SyntaxHighlight;
 
 public class ChatActivityEnterView extends BlurredFrameLayout implements NotificationCenter.NotificationCenterDelegate, SizeNotifierFrameLayout.SizeNotifierFrameLayoutDelegate, StickersAlert.StickersAlertDelegate {
 
