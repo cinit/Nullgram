@@ -137,13 +137,16 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = File(projectDir, "config/release.keystore")
-            storePassword = (keystorePwd ?: System.getenv("KEYSTORE_PASS"))
-            keyAlias = (alias ?: System.getenv("ALIAS_NAME"))
-            keyPassword = (pwd ?: System.getenv("ALIAS_PASS"))
-            enableV3Signing = true
-            enableV4Signing = true
+        val keystoreFile = File(projectDir, "config/release.keystore")
+        if (keystoreFile.exists()) {
+            create("release") {
+                storeFile = keystoreFile
+                storePassword = (keystorePwd ?: System.getenv("KEYSTORE_PASS"))
+                keyAlias = (alias ?: System.getenv("ALIAS_NAME"))
+                keyPassword = (pwd ?: System.getenv("ALIAS_PASS"))
+                enableV3Signing = true
+                enableV4Signing = true
+            }
         }
     }
 
@@ -164,6 +167,10 @@ android {
         }
 
         getByName("debug") {
+            // If we have release signing config, use it for debug as well
+            if (signingConfigs.findByName("release")?.keyAlias != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isDefault = true
             isDebuggable = true
             isJniDebuggable = false
