@@ -174,10 +174,6 @@
 -dontwarn org.jetbrains.annotations.NotNull
 -dontwarn org.jetbrains.annotations.Nullable
 
--allowaccessmodification
--overloadaggressively
 -keepattributes SourceFile,LineNumberTable,LocalVariableTable
--renamesourcefileattribute SourceFile
--obfuscationdictionary          proguard-dic.txt
--classobfuscationdictionary     proguard-dic.txt
--packageobfuscationdictionary   proguard-dic.txt
+
+-dontobfuscate
