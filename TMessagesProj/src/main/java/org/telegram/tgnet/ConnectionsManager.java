@@ -411,7 +411,7 @@ public class ConnectionsManager extends BaseController {
                         resp.networkType = networkType;
                     }
                     if (BuildVars.LOGS_ENABLED) {
-                        // FileLog.d("java received " + resp + " error = " + error);
+                        // FileLog.d("java received " + resp + " error = " + error + " messageId = " + requestMsgId);
                     }
                     final TLObject finalResponse = resp;
                     final TLRPC.TL_error finalError = error;

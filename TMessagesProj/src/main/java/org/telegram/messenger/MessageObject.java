@@ -841,7 +841,7 @@ public class MessageObject {
                     if (checkCaption && captionMessage == null) {
                         captionMessage = messageObject;
                         checkCaption = false;
-                    } else {
+                    } else if (!isDocuments) {
                         captionMessage = null;
                     }
                     hasCaption = true;
