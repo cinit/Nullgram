@@ -158,7 +158,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
             if (view instanceof SelectorUserCell) {
                 SelectorUserCell cell = ((SelectorUserCell) view);
                 if (cell.getBoost().cooldown_until_date > 0) {
-                    SpannableStringBuilder text = AndroidUtilities.replaceTags(LocaleController.formatString("BoostingWaitWarning", R.string.BoostingWaitWarning, BoostRepository.boostsPerSentGift()));
+                    SpannableStringBuilder text = AndroidUtilities.replaceTags(LocaleController.formatPluralString("BoostingWaitWarningPlural", BoostRepository.boostsPerSentGift()));
                     BulletinFactory.of(container, resourcesProvider).createSimpleBulletin(R.raw.chats_infotip, text, 5).show(true);
                     return;
                 }
@@ -332,10 +332,12 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
         public TopCell(Context context) {
             super(context);
             setOrientation(LinearLayout.VERTICAL);
-
+            setClipChildren(false);
             avatarsContainer = new FrameLayout(getContext());
-
+            avatarsContainer.setClipChildren(false);
             avatarsWrapper = new FrameLayout(getContext());
+            avatarsWrapper.setClipChildren(false);
+
             avatarsContainer.addView(avatarsWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, 0, 0, 0, 0, 0));
 
             arrowView = new ArrowView(context);
@@ -364,7 +366,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
         }
 
         public void setData(TLRPC.Chat chat) {
-            description.setText(AndroidUtilities.replaceTags(LocaleController.formatString("BoostingReassignBoostText", R.string.BoostingReassignBoostText, chat == null ? "" : chat.title, BoostRepository.boostsPerSentGift())));
+            description.setText(AndroidUtilities.replaceTags(LocaleController.formatPluralString("BoostingReassignBoostTextPlural", BoostRepository.boostsPerSentGift(), chat == null ? "" : chat.title)));
         }
 
         public void showBoosts(List<TL_stories.TL_myBoost> selectedBoosts, TLRPC.Chat currentChat) {
@@ -472,7 +474,7 @@ public class ReassignBoostBottomSheet extends BottomSheetWithRecyclerListView {
                 avatarsContainer.animate().setInterpolator(interpolator).translationX(0).setDuration(duration).start();
             } else {
                 int count = addedChats.size() - 1;
-                avatarsContainer.animate().setInterpolator(interpolator).translationX(dp(11) * count).setDuration(duration).start();
+                avatarsContainer.animate().setInterpolator(interpolator).translationX(dp(13) * count).setDuration(duration).start();
             }
 
             toAvatar.animate().cancel();

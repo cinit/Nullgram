@@ -117,6 +117,7 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
                     }
                 }
                 selectedParticipantsType = tmpParticipantsType;
+                updateRows(false, false);
             } else if (view instanceof DurationCell) {
                 selectedMonths = ((TLRPC.TL_premiumGiftCodeOption) ((DurationCell) view).getGifCode()).months;
                 updateRows(false, false);
@@ -170,22 +171,24 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
             } else {
                 List<TLRPC.TL_premiumGiftCodeOption> options = BoostRepository.filterGiftOptions(giftCodeOptions, getSelectedSliderValue());
                 if (isPreparedGiveaway()) {
-                    int dateInt = BoostRepository.prepareServerDate(selectedEndDate);
-                    boolean onlyNewSubscribers = selectedParticipantsType == ParticipantsTypeCell.TYPE_NEW;
-                    actionBtn.updateLoading(true);
-                    BoostRepository.launchPreparedGiveaway(prepaidGiveaway, selectedChats, selectedCountries, currentChat, dateInt, onlyNewSubscribers,
-                            result -> {
-                                dismiss();
-                                AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, true, prepaidGiveaway), 220);
-                            }, error -> {
-                                actionBtn.updateLoading(false);
-                                BoostDialogs.showToastError(getContext(), error);
-                            });
+                    BoostDialogs.showStartGiveawayDialog(() -> {
+                        int dateInt = BoostRepository.prepareServerDate(selectedEndDate);
+                        boolean onlyNewSubscribers = selectedParticipantsType == ParticipantsTypeCell.TYPE_NEW;
+                        actionBtn.updateLoading(true);
+                        BoostRepository.launchPreparedGiveaway(prepaidGiveaway, selectedChats, selectedCountries, currentChat, dateInt, onlyNewSubscribers,
+                                result -> {
+                                    dismiss();
+                                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.boostByChannelCreated, currentChat, true, prepaidGiveaway), 220);
+                                }, error -> {
+                                    actionBtn.updateLoading(false);
+                                    BoostDialogs.showToastError(getContext(), error);
+                                });
+                    });
                 } else {
                     for (int i = 0; i < options.size(); i++) {
                         TLRPC.TL_premiumGiftCodeOption option = options.get(i);
                         if (option.months == selectedMonths) {
-                            if (BoostRepository.isGoogleBillingAvailable() && BoostDialogs.checkReduceQuantity(getContext(), resourcesProvider, giftCodeOptions, option, arg -> {
+                            if (BoostRepository.isGoogleBillingAvailable() && BoostDialogs.checkReduceQuantity(sliderValues, getContext(), resourcesProvider, giftCodeOptions, option, arg -> {
                                 selectedSliderIndex = sliderValues.indexOf(arg.users);
                                 updateRows(true, true);
                                 updateActionButton(true);
@@ -370,10 +373,10 @@ public class BoostViaGiftsBottomSheet extends BottomSheetWithRecyclerListView im
     }
 
     @Override
-    public void onChatsSelected(List<TLRPC.Chat> chats) {
+    public void onChatsSelected(List<TLRPC.Chat> chats, boolean animated) {
         selectedChats.clear();
         selectedChats.addAll(chats);
-        updateRows(true, true);
+        updateRows(animated, true);
     }
 
     @Override

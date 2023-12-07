@@ -16,6 +16,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -39,6 +40,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
@@ -847,7 +849,8 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
     public static JSONObject makeThemeParams(Theme.ResourcesProvider resourcesProvider) {
         try {
             JSONObject jsonObject = new JSONObject();
-            jsonObject.put("bg_color", Theme.getColor(Theme.key_dialogBackground, resourcesProvider));
+            final int backgroundColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
+            jsonObject.put("bg_color", backgroundColor);
             jsonObject.put("section_bg_color", Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
             jsonObject.put("secondary_bg_color", Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
             jsonObject.put("text_color", Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
@@ -856,10 +859,10 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
             jsonObject.put("button_color", Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
             jsonObject.put("button_text_color", Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             jsonObject.put("header_bg_color", Theme.getColor(Theme.key_actionBarDefault, resourcesProvider));
-            jsonObject.put("accent_text_color", Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider));
-            jsonObject.put("section_header_text_color", Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
-            jsonObject.put("subtitle_text_color", Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
-            jsonObject.put("destructive_text_color", Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
+            jsonObject.put("accent_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4, resourcesProvider)));
+            jsonObject.put("section_header_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider)));
+            jsonObject.put("subtitle_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider)));
+            jsonObject.put("destructive_text_color", Theme.blendOver(backgroundColor, Theme.getColor(Theme.key_text_RedRegular, resourcesProvider)));
             return jsonObject;
         } catch (Exception e) {
             FileLog.e(e);
@@ -888,7 +891,13 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
         this.buttonText = buttonText;
         this.currentWebApp = app;
 
-        actionBar.setTitle(UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId)));
+        CharSequence title = UserObject.getUserName(MessagesController.getInstance(currentAccount).getUser(botId));
+        try {
+            TextPaint tp = new TextPaint();
+            tp.setTextSize(AndroidUtilities.dp(20));
+            title = Emoji.replaceEmoji(title, tp.getFontMetricsInt(), false);
+        } catch (Exception ignore) {}
+        actionBar.setTitle(title);
         ActionBarMenu menu = actionBar.createMenu();
         menu.removeAllViews();
 

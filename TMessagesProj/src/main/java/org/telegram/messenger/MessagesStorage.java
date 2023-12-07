@@ -101,7 +101,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 135;
+    public final static int LAST_DB_VERSION = 136;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -601,7 +601,6 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE stickers_v2(id INTEGER PRIMARY KEY, data BLOB, date INTEGER, hash INTEGER);").stepThis().dispose();
         database.executeFast("CREATE TABLE stickers_featured(id INTEGER PRIMARY KEY, data BLOB, unread BLOB, date INTEGER, hash INTEGER, premium INTEGER, emoji INTEGER);").stepThis().dispose();
         database.executeFast("CREATE TABLE stickers_dice(emoji TEXT PRIMARY KEY, data BLOB, date INTEGER);").stepThis().dispose();
-        database.executeFast("CREATE TABLE stickersets(id INTEGER PRIMATE KEY, data BLOB, hash INTEGER);").stepThis().dispose();
         database.executeFast("CREATE TABLE hashtag_recent_v2(id TEXT PRIMARY KEY, date INTEGER);").stepThis().dispose();
         database.executeFast("CREATE TABLE webpage_pending_v2(id INTEGER, mid INTEGER, uid INTEGER, PRIMARY KEY (id, mid, uid));").stepThis().dispose();
         database.executeFast("CREATE TABLE sent_files_v2(uid TEXT, type INTEGER, data BLOB, parent TEXT, PRIMARY KEY (uid, type))").stepThis().dispose();
@@ -612,6 +611,9 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE TABLE pending_tasks(id INTEGER PRIMARY KEY, data BLOB);").stepThis().dispose();
         database.executeFast("CREATE TABLE requested_holes(uid INTEGER, seq_out_start INTEGER, seq_out_end INTEGER, PRIMARY KEY (uid, seq_out_start, seq_out_end));").stepThis().dispose();
         database.executeFast("CREATE TABLE sharing_locations(uid INTEGER PRIMARY KEY, mid INTEGER, date INTEGER, period INTEGER, message BLOB, proximity INTEGER);").stepThis().dispose();
+
+        database.executeFast("CREATE TABLE stickersets2(id INTEGER PRIMATE KEY, data BLOB, hash INTEGER, date INTEGER);").stepThis().dispose();
+        database.executeFast("CREATE INDEX IF NOT EXISTS stickersets2_id_index ON stickersets2(id);").stepThis().dispose();
 
         database.executeFast("CREATE INDEX IF NOT EXISTS stickers_featured_emoji_index ON stickers_featured(emoji);").stepThis().dispose();
 
@@ -1342,7 +1344,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast("DELETE FROM attach_menu_bots").stepThis().dispose();
                 database.executeFast("DELETE FROM animated_emoji").stepThis().dispose();
                 database.executeFast("DELETE FROM stickers_v2").stepThis().dispose();
-                database.executeFast("DELETE FROM stickersets").stepThis().dispose();
+                database.executeFast("DELETE FROM stickersets2").stepThis().dispose();
                 database.executeFast("DELETE FROM messages_holes_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM messages_topics").stepThis().dispose();
                 database.executeFast("DELETE FROM topics").stepThis().dispose();
@@ -10418,6 +10420,7 @@ public class MessagesStorage extends BaseController {
         SQLitePreparedStatement state_tasks = null;
         SQLitePreparedStatement state_dialogs_replace = null;
         SQLitePreparedStatement state_dialogs_update = null;
+        SQLitePreparedStatement state_dialogs_update_without_message = null;
         SQLitePreparedStatement state_topics_update = null;
         SQLitePreparedStatement state_media_topics = null;
         SQLiteCursor cursor = null;
@@ -11243,6 +11246,7 @@ public class MessagesStorage extends BaseController {
 
                 state_dialogs_replace = database.executeFast("REPLACE INTO dialogs VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 state_dialogs_update = database.executeFast("UPDATE dialogs SET date = ?, unread_count = ?, last_mid = ?, last_mid_group = ?, unread_count_i = ? WHERE did = ?");
+                state_dialogs_update_without_message = database.executeFast("UPDATE dialogs SET unread_count = ?, unread_count_i = ? WHERE did = ?");
                 state_topics_update = database.executeFast("UPDATE topics SET unread_count = ?, top_message = ?, unread_mentions = ?, total_messages_count = ? WHERE did = ? AND topic_id = ?");
 
                 ArrayList<Long> dids = new ArrayList<>();
@@ -11301,18 +11305,26 @@ public class MessagesStorage extends BaseController {
 
                     dids.add(key);
                     if (exists) {
-                        state_dialogs_update.requery();
-                        state_dialogs_update.bindInteger(1, message != null && (!doNotUpdateDialogDate || dialog_date == 0) ? message.date : dialog_date);
-                        state_dialogs_update.bindInteger(2, old_unread_count + unread_count);
-                        state_dialogs_update.bindInteger(3, messageId);
-                        if (message != null && (message.flags & 131072) != 0) {
-                            state_dialogs_update.bindLong(4, message.grouped_id);
+                        if (messageId >= last_mid || DialogObject.isEncryptedDialog(key)) {
+                            state_dialogs_update.requery();
+                            state_dialogs_update.bindInteger(1, message != null && (!doNotUpdateDialogDate || dialog_date == 0) ? message.date : dialog_date);
+                            state_dialogs_update.bindInteger(2, old_unread_count + unread_count);
+                            state_dialogs_update.bindInteger(3, messageId);
+                            if (message != null && (message.flags & 131072) != 0) {
+                                state_dialogs_update.bindLong(4, message.grouped_id);
+                            } else {
+                                state_dialogs_update.bindNull(4);
+                            }
+                            state_dialogs_update.bindInteger(5, old_mentions_count + mentions_count);
+                            state_dialogs_update.bindLong(6, key);
+                            state_dialogs_update.step();
                         } else {
-                            state_dialogs_update.bindNull(4);
+                            state_dialogs_update_without_message.requery();
+                            state_dialogs_update_without_message.bindInteger(1, old_unread_count + unread_count);
+                            state_dialogs_update_without_message.bindInteger(2, old_mentions_count + mentions_count);
+                            state_dialogs_update_without_message.bindLong(3, key);
+                            state_dialogs_update_without_message.step();
                         }
-                        state_dialogs_update.bindInteger(5, old_mentions_count + mentions_count);
-                        state_dialogs_update.bindLong(6, key);
-                        state_dialogs_update.step();
                     } else {
                         state_dialogs_replace.requery();
                         state_dialogs_replace.bindLong(1, key);
@@ -11342,6 +11354,8 @@ public class MessagesStorage extends BaseController {
                 }
                 state_dialogs_update.dispose();
                 state_dialogs_update = null;
+                state_dialogs_update_without_message.dispose();
+                state_dialogs_update_without_message = null;
                 state_dialogs_replace.dispose();
                 state_dialogs_replace = null;
 
@@ -11569,6 +11583,9 @@ public class MessagesStorage extends BaseController {
             }
             if (state_dialogs_update != null) {
                 state_dialogs_update.dispose();
+            }
+            if (state_dialogs_update_without_message != null) {
+                state_dialogs_update_without_message.dispose();
             }
             if (state_topics_update != null) {
                 state_topics_update.dispose();

@@ -110,8 +110,7 @@ public class ExperimentSettingActivity extends BaseActivity {
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(Config.disableSendTyping);
             }
-        }
-        if (position == disableFilteringRow) {
+        } else if (position == disableFilteringRow) {
             sensitiveEnabled = !sensitiveEnabled;
             TLRPC.TL_account_setContentSettings req = new TLRPC.TL_account_setContentSettings();
             req.sensitive_enabled = sensitiveEnabled;
@@ -344,8 +343,7 @@ public class ExperimentSettingActivity extends BaseActivity {
                     } else if (position == storyStealthModeRow) {
                         textCell.setTextAndCheck(LocaleController.getString("storyStealthMode", R.string.storyStealthMode),
                             Config.storyStealthMode, true);
-                    }
-                    if (position == disableFilteringRow) {
+                    } else if (position == disableFilteringRow) {
                         textCell.setTextAndValueAndCheck(LocaleController.getString("SensitiveDisableFiltering", R.string.SensitiveDisableFiltering),
                             LocaleController.getString("SensitiveAbout", R.string.SensitiveAbout), sensitiveEnabled, true, true);
                         textCell.setEnabled(sensitiveCanChange, null);

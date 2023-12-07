@@ -33,7 +33,6 @@ import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -76,6 +75,7 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
@@ -2523,6 +2523,17 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             avatarDrawable.setInfo(chat);
             headerView.backupImageView.getImageReceiver().setForUserOrChat(chat, avatarDrawable);
             headerView.titleView.setText(chat.title);
+
+            if (chat != null && chat.verifiedExtended()) {
+                Drawable verifyDrawable = ContextCompat.getDrawable(getContext(), R.drawable.verified_profile).mutate();
+                verifyDrawable.setAlpha(255);
+                CombinedDrawable drawable = new CombinedDrawable(verifyDrawable, null);
+                drawable.setFullsize(true);
+                drawable.setCustomSize(AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+                headerView.titleView.setRightDrawable(drawable);
+            } else {
+                headerView.titleView.setRightDrawable(null);
+            }
         }
         if (isActive && (isSelf || isChannel)) {
             storiesController.pollViewsForSelfStories(dialogId, true);
@@ -4823,7 +4834,16 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
                 return uploadingStory.entry.allowScreenshots;
             }
             if (storyItem != null) {
-                return !storyItem.noforwards;
+                if (storyItem.noforwards) {
+                    return false;
+                }
+                if (storyItem.pinned) {
+                    final long did = storyItem.dialogId;
+                    final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                    if (chat != null && chat.noforwards) {
+                        return false;
+                    }
+                }
             }
             return true;
         }

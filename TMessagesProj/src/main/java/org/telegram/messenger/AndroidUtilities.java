@@ -206,7 +206,6 @@ import java.util.regex.Pattern;
 import top.qwq2333.gen.Config;
 import top.qwq2333.nullgram.utils.AlertUtil;
 import top.qwq2333.nullgram.utils.AnalyticsUtils;
-import top.qwq2333.nullgram.utils.TypefaceUtils;
 
 public class AndroidUtilities {
     public final static int LIGHT_STATUS_BAR_OVERLAY = 0x0f000000, DARK_STATUS_BAR_OVERLAY = 0x33000000;
@@ -515,6 +514,35 @@ public class AndroidUtilities {
                     }
                 }, index, index + len, 0);
             }
+        }
+        return spannableStringBuilder;
+    }
+
+    public static SpannableStringBuilder replaceSingleLink(String str, int color) {
+        int startIndex = str.indexOf("**");
+        int endIndex = str.indexOf("**", startIndex + 1);
+        str = str.replace("**", "");
+        int index = -1;
+        int len = 0;
+        if (startIndex >= 0 && endIndex >= 0 && endIndex - startIndex > 2) {
+            len = endIndex - startIndex - 2;
+            index = startIndex;
+        }
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(str);
+        if (index >= 0) {
+            spannableStringBuilder.setSpan(new ClickableSpan() {
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(false);
+                    ds.setColor(color);
+                }
+
+                @Override
+                public void onClick(@NonNull View view) {
+
+                }
+            }, index, index + len, 0);
         }
         return spannableStringBuilder;
     }
@@ -1907,43 +1935,17 @@ public class AndroidUtilities {
             if (!typefaceCache.containsKey(assetPath)) {
                 try {
                     Typeface t;
-                    switch (assetPath) {
-                        case TYPEFACE_ROBOTO_MEDIUM:
-                            if (TypefaceUtils.isMediumWeightSupported()) {
-                                t = Typeface.create("sans-serif-medium", Typeface.NORMAL);
-                            } else {
-                                t = Typeface.create("sans-serif", Typeface.BOLD);
-                            }
-                            break;
-                        case "fonts/ritalic.ttf":
-                            t = Typeface.create("sans-serif", Typeface.ITALIC);
-                            break;
-                        case TYPEFACE_ROBOTO_MEDIUM_ITALIC:
-                            if (TypefaceUtils.isMediumWeightSupported()) {
-                                t = Typeface.create("sans-serif-medium", Typeface.ITALIC);
-                            } else {
-                                t = Typeface.create("sans-serif", Typeface.BOLD_ITALIC);
-                            }
-                            break;
-                        case TYPEFACE_ROBOTO_MONO:
-                            t = Typeface.MONOSPACE;
-                            break;
-                        case "fonts/rcondensedbold.ttf":
-                            t = Typeface.create("sans-serif-condensed", Typeface.BOLD);
-                            break;
-                        default:
-                            if (Build.VERSION.SDK_INT >= 26) {
-                                Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                                if (assetPath.contains("medium")) {
-                                    builder.setWeight(700);
-                                }
-                                if (assetPath.contains("italic")) {
-                                    builder.setItalic(true);
-                                }
-                                t = builder.build();
-                            } else {
-                                t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
-                            }
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        Typeface.Builder builder = new Typeface.Builder(ApplicationLoader.applicationContext.getAssets(), assetPath);
+                        if (assetPath.contains("medium")) {
+                            builder.setWeight(700);
+                        }
+                        if (assetPath.contains("italic")) {
+                            builder.setItalic(true);
+                        }
+                        t = builder.build();
+                    } else {
+                        t = Typeface.createFromAsset(ApplicationLoader.applicationContext.getAssets(), assetPath);
                     }
                     typefaceCache.put(assetPath, t);
                 } catch (Exception e) {
@@ -2962,6 +2964,9 @@ public class AndroidUtilities {
     }
 
     public static void shakeViewSpring(View view, float shiftDp, Runnable endCallback) {
+        if (view == null) {
+            return;
+        }
         int shift = dp(shiftDp);
         if (view.getTag(R.id.spring_tag) != null) {
             ((SpringAnimation) view.getTag(R.id.spring_tag)).cancel();

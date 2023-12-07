@@ -59,9 +59,7 @@ import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
-import android.util.Log;
 import android.util.Property;
 import android.util.TypedValue;
 import android.view.ActionMode;
@@ -115,7 +113,6 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.CodeHighlighting;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -137,7 +134,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
-import org.telegram.messenger.XiaomiUtilities;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.messenger.camera.CameraController;
 import org.telegram.tgnet.ConnectionsManager;
@@ -3503,12 +3499,7 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 BotWebViewSheet webViewSheet = new BotWebViewSheet(getContext(), parentFragment.getResourceProvider());
                 webViewSheet.setParentActivity(parentActivity);
                 webViewSheet.requestWebView(currentAccount, dialog_id, dialog_id, botMenuWebViewTitle, botMenuWebViewUrl, BotWebViewSheet.TYPE_BOT_MENU_BUTTON, 0, false);
-                BaseFragment lastFragment = getLastFragment();
-                if (lastFragment != null) {
-                    lastFragment.showDialog(webViewSheet);
-                } else {
-                    webViewSheet.show();
-                }
+                webViewSheet.show();
 
                 if (botCommandsMenuButton != null) {
                     botCommandsMenuButton.setOpened(false);
@@ -3810,11 +3801,22 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             return;
         }
         botCommandsMenuContainer = new BotCommandsMenuContainer(getContext()) {
+            boolean ignoreLayout = false;
+
             @Override
             protected void onDismiss() {
                 super.onDismiss();
                 if (botCommandsMenuButton != null) {
                     botCommandsMenuButton.setOpened(false);
+                }
+            }
+
+            @Override
+            protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+                super.onLayout(changed, left, top, right, bottom);
+                if (!ignoreLayout) {
+                    ignoreLayout = true;
+                    updateBotCommandsMenuContainerTopPadding();
                 }
             }
         };
@@ -3872,10 +3874,24 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             return;
         }
         int padding;
-        if (botCommandsAdapter.getItemCount() > 4) {
-            padding = Math.max(0, sizeNotifierLayout.getMeasuredHeight() - AndroidUtilities.dp(8 + 36 * 4.3f));
+
+        final int viewsCount = botCommandsMenuContainer.listView.getChildCount();
+        int measuredFourViewsHeight = 0;
+        for (int i = 0; i < viewsCount; i++) {
+            final View child = botCommandsMenuContainer.listView.getChildAt(i);
+            if (i < 4) {
+                measuredFourViewsHeight += child.getMeasuredHeight();
+            }
+        }
+
+        if (measuredFourViewsHeight > 0) {
+            padding = Math.max(0, sizeNotifierLayout.getMeasuredHeight() - measuredFourViewsHeight - AndroidUtilities.dp(8) - AndroidUtilities.dp(viewsCount > 4 ? 12 : 0));
         } else {
-            padding = Math.max(0, sizeNotifierLayout.getMeasuredHeight() - AndroidUtilities.dp(8 + 36 * Math.max(1, Math.min(4, botCommandsAdapter.getItemCount()))));
+            if (botCommandsAdapter.getItemCount() > 4) {
+                padding = Math.max(0, sizeNotifierLayout.getMeasuredHeight() - AndroidUtilities.dp(8 + 36 * 4.3f));
+            } else {
+                padding = Math.max(0, sizeNotifierLayout.getMeasuredHeight() - AndroidUtilities.dp(8 + 36 * Math.max(1, Math.min(4, botCommandsAdapter.getItemCount()))));
+            }
         }
 
         if (botCommandsMenuContainer.listView.getPaddingTop() != padding) {
@@ -4443,7 +4459,9 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                     return;
                 }
                 if (sendByEnter && !isPaste && editingMessageObject == null && count > before && charSequence.length() > 0 && charSequence.length() == start + count && charSequence.charAt(charSequence.length() - 1) == '\n') {
-                    nextChangeIsSend = true;
+                    if (replyingQuote != null) {
+                        nextChangeIsSend = true;
+                    }
                 }
                 isPaste = false;
                 checkSendButton(true);
@@ -5915,23 +5933,27 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             editingMessageObject.editingMessage = message[0];
             editingMessageObject.editingMessageEntities = entities;
             editingMessageObject.editingMessageSearchWebPage = messageWebPageSearch;
-            if (parentFragment != null && parentFragment.messagePreviewParams != null) {
+            if (parentFragment != null && parentFragment.getCurrentChat() != null && !ChatObject.canSendEmbed(parentFragment.getCurrentChat())) {
+                editingMessageObject.editingMessageSearchWebPage = false;
+                editingMessageObject.messageOwner.flags &=~ 512;
+                editingMessageObject.messageOwner.media = null;
+            } else if (parentFragment != null && parentFragment.messagePreviewParams != null) {
                 if (parentFragment.foundWebPage instanceof TLRPC.TL_webPagePending) {
                     editingMessageObject.editingMessageSearchWebPage = false;
                     if (editingMessageObject.type == MessageObject.TYPE_TEXT || editingMessageObject.type == MessageObject.TYPE_EMOJIS) {
                         editingMessageObject.messageOwner.media = new TLRPC.TL_messageMediaEmpty();
-                        editingMessageObject.messageOwner.media.flags |= 512;
+                        editingMessageObject.messageOwner.flags |= 512;
                     }
                 } else if (parentFragment.messagePreviewParams.webpage != null) {
                     editingMessageObject.editingMessageSearchWebPage = false;
+                    editingMessageObject.messageOwner.flags |= 512;
                     editingMessageObject.messageOwner.media = new TLRPC.TL_messageMediaWebPage();
-                    editingMessageObject.messageOwner.media.flags |= 512;
                     editingMessageObject.messageOwner.media.webpage = parentFragment.messagePreviewParams.webpage;
                 } else {
                     editingMessageObject.editingMessageSearchWebPage = false;
                     if (editingMessageObject.type == MessageObject.TYPE_TEXT || editingMessageObject.type == MessageObject.TYPE_EMOJIS) {
+                        editingMessageObject.messageOwner.flags |= 512;
                         editingMessageObject.messageOwner.media = new TLRPC.TL_messageMediaEmpty();
-                        editingMessageObject.messageOwner.media.flags |= 512;
                     }
                 }
                 editingMessageObject.messageOwner.invert_media = parentFragment.messagePreviewParams.webpageTop;
@@ -5942,8 +5964,8 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
             } else {
                 editingMessageObject.editingMessageSearchWebPage = false;
                 if (editingMessageObject.type == MessageObject.TYPE_TEXT || editingMessageObject.type == MessageObject.TYPE_EMOJIS) {
+                    editingMessageObject.messageOwner.flags |= 512;
                     editingMessageObject.messageOwner.media = new TLRPC.TL_messageMediaEmpty();
-                    editingMessageObject.messageOwner.media.flags |= 512;
                 }
             }
             SendMessagesHelper.getInstance(currentAccount).editMessage(editingMessageObject, null, null, null, null, null, false, editingMessageObject.hasMediaSpoilers(), null);
@@ -6037,7 +6059,10 @@ public class ChatActivityEnterView extends BlurredFrameLayout implements Notific
                 SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(message[0].toString(), dialog_id, replyingMessageObject, replyToTopMsg, messageWebPage, messageWebPageSearch, entities, null, null, notify, scheduleDate, sendAnimationData, updateStickersOrder);
                 applyStoryToSendMessageParams(params);
                 params.invert_media = parentFragment != null && parentFragment.messagePreviewParams != null && parentFragment.messagePreviewParams.webpageTop;
-                if (messageWebPage instanceof TLRPC.TL_webPagePending) {
+                if (parentFragment != null && parentFragment.getCurrentChat() != null && !ChatObject.canSendEmbed(parentFragment.getCurrentChat())) {
+                    params.searchLinks = false;
+                    params.mediaWebPage = null;
+                } else if (messageWebPage instanceof TLRPC.TL_webPagePending) {
                     params.searchLinks = true;
                     params.mediaWebPage = null;
                 } else if (messageWebPage != null) {

@@ -770,8 +770,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             canApplyBoost.setMyBoosts(myBoosts);
             onBoostSuccess();
 
-            String str = LocaleController.formatString("BoostingReassignedFrom", R.string.BoostingReassignedFrom,
-                    LocaleController.formatPluralString("BoostingSubscriptionsCount", size),
+            String str = LocaleController.formatPluralString("BoostingReassignedFromPlural", size,
                     LocaleController.formatPluralString("BoostingFromOtherChannel", channels));
             BulletinFactory bulletinFactory = BulletinFactory.of(container, resourcesProvider);
             bulletinFactory.createSimpleBulletinWithIconSize(R.raw.forward, str, 30).setDuration(4000).show(true);
@@ -1058,7 +1057,7 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
                 } else {
                     descriptionStr = LocaleController.formatString(
                             "ChannelNeedBoostsDescriptionNextLevel", R.string.ChannelNeedBoostsDescriptionNextLevel,
-                            LocaleController.formatPluralString("MoreBoosts", boostsStatus.next_level_boosts, boostsStatus.next_level_boosts),
+                            LocaleController.formatPluralString("MoreBoosts", boostsStatus.next_level_boosts - boostsStatus.boosts, boostsStatus.next_level_boosts - boostsStatus.boosts),
                             LocaleController.formatPluralString("BoostStories", boostsStatus.level + 1)
                     );
                 }

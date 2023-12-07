@@ -509,6 +509,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             selectedPhotosOrder.clear();
             selectedPhotos.clear();
         }
+
+        @Override
+        public boolean allowCaption() {
+            return !parentAlert.isPhotoPicker;
+        }
     };
 
     protected void updateCheckedPhotoIndices() {
@@ -1438,6 +1443,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     boolean isAnimatedSticker = MessageObject.isAnimatedStickerDocument(document, true);
                     mediaEntity.subType |= isAnimatedSticker ? 1 : 4;
                 }
+                if (MessageObject.isTextColorEmoji(document)) {
+                    mediaEntity.color = 0xFFFFFFFF;
+                    mediaEntity.subType |= 8;
+                }
 
                 photoEntry.editedInfo.mediaEntities = new ArrayList<>();
                 photoEntry.editedInfo.mediaEntities.add(mediaEntity);
@@ -1889,6 +1898,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             @Override
             public boolean canCaptureMorePhotos() {
                 return parentAlert.maxSelectedPhotos != 1;
+            }
+
+            @Override
+            public boolean allowCaption() {
+                return !parentAlert.isPhotoPicker;
             }
         }, chatActivity);
         PhotoViewer.getInstance().setAvatarFor(parentAlert.getAvatarFor());

@@ -1,45 +1,30 @@
 package org.telegram.messenger;
 
-import android.content.Context;
-import android.graphics.Paint;
+import static org.telegram.messenger.AndroidUtilities.dp;
+
 import android.graphics.Typeface;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
 import android.text.Spanned;
-import android.text.SpannedString;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
-import android.text.style.LineHeightSpan;
-import android.text.style.MetricAffectingSpan;
-import android.util.Log;
 
-import androidx.annotation.NonNull;
-
-import org.telegram.tgnet.AbstractSerializedData;
-import org.telegram.tgnet.SerializedData;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.TextStyleSpan;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class CodeHighlighting {
 
@@ -52,7 +37,13 @@ public class CodeHighlighting {
     public static final int MATCH_COMMENT = 6;
     public static final int MATCH_FUNCTION = 7;
 
-    public static class Span extends MetricAffectingSpan {
+    public static int getTextSizeDecrement(int codeLength) {
+        if (codeLength > 120) return 5;
+        if (codeLength > 50) return 3;
+        return 2;
+    }
+
+    public static class Span extends CharacterStyle {
 
         public final String lng;
         public final String code;
@@ -67,36 +58,15 @@ public class CodeHighlighting {
 
             this.lng = lng;
             this.code = code;
-            if (code == null) {
-                this.decrementSize = 2;
-            } else if (code.length() > 120) {
-                this.decrementSize = 5;
-            } else if (code.length() > 50) {
-                this.decrementSize = 3;
-            } else {
-                this.decrementSize = 2;
-            }
+            this.decrementSize = getTextSizeDecrement(code == null ? 0 : code.length());
             this.currentType = type;
             this.style = style;
         }
 
         @Override
-        public void updateMeasureState(TextPaint p) {
-            if (smallerSize) {
-                p.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize - decrementSize));
-            }
-            p.setFlags(p.getFlags() | Paint.SUBPIXEL_TEXT_FLAG);
-            if (style != null) {
-                style.applyStyle(p);
-            } else {
-                p.setTypeface(Typeface.MONOSPACE);
-            }
-        }
-
-        @Override
         public void updateDrawState(TextPaint p) {
             if (smallerSize) {
-                p.setTextSize(AndroidUtilities.dp(SharedConfig.fontSize - decrementSize));
+                p.setTextSize(dp(SharedConfig.fontSize - decrementSize));
             }
             if (currentType == 2) {
                 p.setColor(0xffffffff);
@@ -224,7 +194,7 @@ public class CodeHighlighting {
             long S = System.currentTimeMillis();
             final StringToken[][] tokens = new StringToken[1][];
             try {
-                tokens[0] = tokenize(text.subSequence(start, end).toString(), compiledPatterns == null ? null : compiledPatterns.get(lng)).toArray();
+                tokens[0] = tokenize(text.subSequence(start, end).toString(), compiledPatterns == null ? null : compiledPatterns.get(lng.toLowerCase().replaceAll("\\W", "")), 0).toArray();
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -299,15 +269,15 @@ public class CodeHighlighting {
         }
     }
 
-    private static LinkedList tokenize(String text, TokenPattern[] grammar) {
-        return tokenize(text, grammar, null);
+    private static LinkedList tokenize(String text, TokenPattern[] grammar, int depth) {
+        return tokenize(text, grammar, null, depth);
     }
 
-    private static LinkedList tokenize(String text, TokenPattern[] grammar, TokenPattern ignorePattern) {
+    private static LinkedList tokenize(String text, TokenPattern[] grammar, TokenPattern ignorePattern, int depth) {
         LinkedList list = new LinkedList();
         list.addAfter(list.head, new StringToken(text));
         grammar = flatRest(grammar);
-        matchGrammar(text, list, grammar, list.head, 0, null, ignorePattern);
+        matchGrammar(text, list, grammar, list.head, 0, null, ignorePattern, depth);
         return list;
     }
 
@@ -337,8 +307,8 @@ public class CodeHighlighting {
         return patterns;
     }
 
-    private static void matchGrammar(String text, LinkedList tokenList, TokenPattern[] grammar, Node startNode, int startPos, RematchOptions rematch, TokenPattern ignorePattern) {
-        if (grammar == null) {
+    private static void matchGrammar(String text, LinkedList tokenList, TokenPattern[] grammar, Node startNode, int startPos, RematchOptions rematch, TokenPattern ignorePattern, int depth) {
+        if (grammar == null || depth > 20) {
             return;
         }
         for (TokenPattern pattern : grammar) {
@@ -430,9 +400,9 @@ public class CodeHighlighting {
 
                 StringToken wrapped;
                 if (pattern.insideTokenPatterns != null) {
-                    wrapped = new StringToken(pattern.group, tokenize(match.string, pattern.insideTokenPatterns), match.length);
+                    wrapped = new StringToken(pattern.group, tokenize(match.string, pattern.insideTokenPatterns, depth + 1), match.length);
                 } else if (pattern.insideLanguage != null) {
-                    wrapped = new StringToken(pattern.group, tokenize(match.string, compiledPatterns.get(pattern.insideLanguage), pattern), match.length);
+                    wrapped = new StringToken(pattern.group, tokenize(match.string, compiledPatterns.get(pattern.insideLanguage), pattern, depth + 1), match.length);
                 } else {
                     wrapped = new StringToken(pattern.group, match.string);
                 }
@@ -446,7 +416,7 @@ public class CodeHighlighting {
                     RematchOptions nestedRematch = new RematchOptions();
                     nestedRematch.cause = pattern;
                     nestedRematch.reach = reach;
-                    matchGrammar(text, tokenList, grammar, currentNode.prev, pos, nestedRematch, ignorePattern);
+                    matchGrammar(text, tokenList, grammar, currentNode.prev, pos, nestedRematch, ignorePattern, depth + 1);
 
                     if (rematch != null && nestedRematch.reach > rematch.reach) {
                         rematch.reach = nestedRematch.reach;
@@ -457,7 +427,7 @@ public class CodeHighlighting {
     }
 
     private static Match matchPattern(TokenPattern pattern, int pos, String text) {
-        Matcher matcher = pattern.pattern.getPattern().matcher(text);
+        Matcher matcher = pattern.pattern.getPattern(). matcher(text);
         matcher.region(pos, text.length());
         if (!matcher.find()) {
             return null;

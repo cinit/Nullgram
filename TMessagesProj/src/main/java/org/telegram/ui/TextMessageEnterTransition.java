@@ -24,7 +24,6 @@ import android.text.SpannableString;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -49,6 +48,8 @@ import org.telegram.ui.Components.EmptyStubSpan;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ReplyMessageLine;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
+
+import top.qwq2333.gen.Config;
 
 public class TextMessageEnterTransition implements MessageEnterTransitionContainer.Transition {
     float fromRadius;
@@ -545,7 +546,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
             if (messageView.replyLine == null) {
                 messageView.replyLine = new ReplyMessageLine(messageView);
             }
-            messageView.replyLine.check(messageView.getMessageObject(), messageView.getCurrentUser(), messageView.getCurrentChat(), resourcesProvider, true);
+            messageView.replyLine.check(messageView.getMessageObject(), messageView.getCurrentUser(), messageView.getCurrentChat(), resourcesProvider, ReplyMessageLine.TYPE_REPLY);
 
             int replyMessageColor;
             int replyOwnerMessageColor;
@@ -629,7 +630,8 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 replySelectorRect
             );
 
-            messageView.replyLine.drawBackground(canvas, replySelectorRect, alphaProgress, messageView.isReplyQuote, messageView.getMessageObject().shouldDrawWithoutBackground());
+            messageView.replyLine.drawBackground(canvas, replySelectorRect, alphaProgress, messageView.isReplyQuote,
+                messageView.getMessageObject().shouldDrawWithoutBackground() || Config.ignoreUserSpecifiedReplyColor);
             messageView.replyLine.drawLine(canvas, replySelectorRect, alphaProgress);
 
             float replyImageSz = 0;
@@ -639,7 +641,7 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
                 replyImageSz = AndroidUtilities.lerp(AndroidUtilities.dp(35), sz, progressX);
                 messageView.replyImageReceiver.setImageCoords(
                     AndroidUtilities.lerp(replyX, replySelectorRect.left + AndroidUtilities.dp(8), progressX),
-                    AndroidUtilities.lerp(replyY, replySelectorRect.top + AndroidUtilities.dp(5), progressX),
+                    AndroidUtilities.lerp(replyY, replySelectorRect.top + AndroidUtilities.dp((messageView.isReplyQuote && messageView.replyTextLayout != null && messageView.replyTextLayout.getLineCount() <= 1 ? 2 : 0) + 5), progressX),
                     replyImageSz, replyImageSz
                 );
                 messageView.replyImageReceiver.draw(canvas);
@@ -690,8 +692,17 @@ public class TextMessageEnterTransition implements MessageEnterTransitionContain
 
             if (messageView.replyTextLayout != null) {
                 canvas.save();
-                final float offsetX2 = (messageView.needReplyImage && (!messageView.isReplyQuote || messageView.replyTextRTL) ? replyImageSz + AndroidUtilities.dp(3) : 0) + AndroidUtilities.dp(messageView.isReplyQuote && messageView.needReplyImage ? -2 : 0);
-                canvas.translate(replyMessageX + offsetX2, replyY + AndroidUtilities.lerp(AndroidUtilities.dp(19), Theme.chat_replyNamePaint.getTextSize() + AndroidUtilities.dp(4) + offsetY, progressX));
+                float left = replyToMessageX;
+                if (messageView.isReplyQuote && messageView.needReplyImage) {
+                    left -= AndroidUtilities.dp(2);
+                }
+                if (messageView.needReplyImage && (!messageView.isReplyQuote || messageView.replyTextRTL)) {
+                    left += replyImageSz + AndroidUtilities.dp(3);
+                }
+                if (messageView.replyTextRTL && messageView.replyTextOffset > 0) {
+                    left = replySelectorRect.right - AndroidUtilities.dp(8) - messageView.replyTextLayout.getWidth() - offset * progressX;
+                }
+                canvas.translate(AndroidUtilities.lerp(fromReplayX - messageView.replyTextOffset, left, progressX), replyY + AndroidUtilities.lerp(AndroidUtilities.dp(19), Theme.chat_replyNamePaint.getTextSize() + AndroidUtilities.dp(4) + offsetY, progressX));
 
                 canvas.save();
                 SpoilerEffect.clipOutCanvas(canvas, messageView.replySpoilers);
