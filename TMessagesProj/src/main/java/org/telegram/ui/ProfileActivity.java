@@ -276,7 +276,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int PHONE_OPTION_CALL = 0,
         PHONE_OPTION_COPY = 1,
         PHONE_OPTION_TELEGRAM_CALL = 2,
-        PHONE_OPTION_TELEGRAM_VIDEO_CALL = 3;
+        PHONE_OPTION_TELEGRAM_VIDEO_CALL = 3,
+        PHONE_OPTION_HIDE = 1001;
+
+    private boolean mOverrideHidePhoneNumber = false;
 
     private RecyclerListView listView;
     private RecyclerListView searchListView;
@@ -5509,6 +5512,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             items.add(LocaleController.getString("Copy", R.string.Copy));
             actions.add(PHONE_OPTION_COPY);
 
+            icons.add(R.drawable.msg_archive_hide);
+            items.add(LocaleController.getString("Hide", R.string.Hide));
+            actions.add(PHONE_OPTION_HIDE);
+
             AtomicReference<ActionBarPopupWindow> popupWindowRef = new AtomicReference<>();
             ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert, resourcesProvider) {
                 Path path = new Path();
@@ -5560,6 +5567,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             }
                             VoIPHelper.startCall(user, action == PHONE_OPTION_TELEGRAM_VIDEO_CALL, userInfo != null && userInfo.video_calls_available, getParentActivity(), userInfo, getAccountInstance());
                             break;
+                        case PHONE_OPTION_HIDE: {
+                            mOverrideHidePhoneNumber = true;
+                            updateRowsIds();
+                            if (listAdapter != null) {
+                                listAdapter.notifyDataSetChanged();
+                            }
+                            break;
+                        }
                     }
                 });
             }
@@ -7932,7 +7947,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     setAvatarSectionRow = rowCount++;
                 }
                 numberSectionRow = rowCount++;
-                numberRow = hidePhone ? -1 : rowCount++;
+                if (!mOverrideHidePhoneNumber) {
+                    numberRow = hidePhone ? -1 : rowCount++;
+                }
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
@@ -7993,7 +8010,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 boolean hasPhone = user != null && (!TextUtils.isEmpty(user.phone) || !TextUtils.isEmpty(vcardPhone));
 
                 infoHeaderRow = rowCount++;
-                if (!isBot && (hasPhone || !hasInfo)) {
+                if (!isBot && (hasPhone || !hasInfo) && !mOverrideHidePhoneNumber) {
                     phoneRow = rowCount++;
                 }
                 if (userInfo != null && !TextUtils.isEmpty(userInfo.about)) {
