@@ -280,6 +280,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         PHONE_OPTION_HIDE = 1001;
 
     private boolean mOverrideHidePhoneNumber = false;
+    private boolean mOverrideHideId = false;
 
     private RecyclerListView listView;
     private RecyclerListView searchListView;
@@ -530,6 +531,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int emptyRow;
     private int bottomPaddingRow;
     private int infoHeaderRow;
+    private int idRow;
     private int phoneRow;
     private int locationRow;
     private int userInfoRow;
@@ -3503,6 +3505,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             } else if (position == numberRow) {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+            } else if (position == idRow) {
+                long id = 0;
+                if (userId != 0) {
+                    id = userId;
+                } else if (chatId != 0) {
+                    id = chatId;
+                }
+                if (id != 0) {
+                    try {
+                        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                        String text = String.valueOf(id);
+                        android.content.ClipData clip = android.content.ClipData.newPlainText("id", text);
+                        clipboard.setPrimaryClip(clip);
+                        BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("TextCopied", R.string.TextCopied), resourcesProvider).show();
+                    } catch (Exception e) {
+                        Log.e(e);
+                    }
+                }
             } else if (position == setAvatarRow) {
                 onWriteButtonClick();
             } else if (position == versionRow) {
@@ -5479,6 +5499,96 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
 
             showDialog(dialog);
+            return true;
+        } else if (position == idRow) {
+            long id = 0;
+            if (userId != 0) {
+                id = userId;
+            } else if (chatId != 0) {
+                id = chatId;
+            }
+            String value = String.valueOf(id);
+            if (id != 0) {
+                Runnable r = () -> {
+                    if (getParentActivity() == null) {
+                        return;
+                    }
+                    CharSequence[] items = new CharSequence[]{LocaleController.getString("Copy", R.string.Copy), LocaleController.getString("Hide", R.string.Hide)};
+                    int[] icons = new int[]{R.drawable.msg_copy, R.drawable.msg_archive_hide};
+
+                    AtomicReference<ActionBarPopupWindow> popupWindowRef = new AtomicReference<>();
+                    ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert, resourcesProvider) {
+                        Path path = new Path();
+
+                        @Override
+                        protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+                            canvas.save();
+                            path.rewind();
+                            AndroidUtilities.rectTmp.set(child.getLeft(), child.getTop(), child.getRight(), child.getBottom());
+                            path.addRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(6), AndroidUtilities.dp(6), Path.Direction.CW);
+                            canvas.clipPath(path);
+                            boolean draw = super.drawChild(canvas, child, drawingTime);
+                            canvas.restore();
+                            return draw;
+                        }
+                    };
+                    popupLayout.setFitItems(true);
+
+                    for (int i = 0; i < icons.length; i++) {
+                        int j = i;
+                        ActionBarMenuItem.addItem(popupLayout, icons[i], items[i], false, resourcesProvider).setOnClickListener(v -> {
+                            popupWindowRef.get().dismiss();
+                            if (j == 0) {
+                                try {
+                                    AndroidUtilities.addToClipboard(value);
+                                    BulletinFactory.of(this).createCopyBulletin(LocaleController.getString("TextCopied", R.string.TextCopied)).show();
+                                } catch (Exception ignored) {
+                                }
+                            } else if (j == 1) {
+                                mOverrideHideId = true;
+                                updateRowsIds();
+                                if (listAdapter != null) {
+                                    listAdapter.notifyDataSetChanged();
+                                }
+                                if (idTextView != null) {
+                                    idTextView.setText("", false);
+                                }
+                            }
+                        });
+                    }
+
+                    ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                    popupWindow.setPauseNotifications(true);
+                    popupWindow.setDismissAnimationDuration(220);
+                    popupWindow.setOutsideTouchable(true);
+                    popupWindow.setClippingEnabled(true);
+                    popupWindow.setAnimationStyle(R.style.PopupContextAnimation);
+                    popupWindow.setFocusable(true);
+                    popupLayout.measure(View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST),
+                        View.MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(1000), View.MeasureSpec.AT_MOST));
+                    popupWindow.setInputMethodMode(ActionBarPopupWindow.INPUT_METHOD_NOT_NEEDED);
+                    popupWindow.getContentView().setFocusableInTouchMode(true);
+                    popupWindowRef.set(popupWindow);
+
+                    float px = x, py = y;
+                    View v = view;
+                    while (v != getFragmentView()) {
+                        px += v.getX();
+                        py += v.getY();
+                        v = (View) v.getParent();
+                    }
+                    if (AndroidUtilities.isTablet()) {
+                        View pv = parentLayout.getView();
+                        px += pv.getX() + pv.getPaddingLeft();
+                        py += pv.getY() + pv.getPaddingTop();
+                    }
+                    px -= popupLayout.getMeasuredWidth() / 2f;
+                    popupWindow.showAtLocation(getFragmentView(), 0, (int) px, (int) py);
+                    popupWindow.dimBehind();
+
+                };
+                r.run();
+            }
             return true;
         } else if (position == linkedUserRow) {
             Browser.openUrl(getParentActivity(), "tg://user?id=" + ConfigManager.getLongOrDefault(Defines.linkedUserPrefix + getCurrentChat().id, 1578562490L));
@@ -7882,6 +7992,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         addToContactsRow = -1;
         emptyRow = -1;
         infoHeaderRow = -1;
+        idRow = -1;
         phoneRow = -1;
         userInfoRow = -1;
         locationRow = -1;
@@ -7950,6 +8061,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!mOverrideHidePhoneNumber) {
                     numberRow = hidePhone ? -1 : rowCount++;
                 }
+                if (!mOverrideHideId) {
+                    idRow = rowCount++;
+                }
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
@@ -8016,6 +8130,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (userInfo != null && !TextUtils.isEmpty(userInfo.about)) {
                     userInfoRow = rowCount++;
                 }
+                if (!mOverrideHideId) {
+                    idRow = rowCount++;
+                }
                 if (user != null && username != null) {
                     usernameRow = rowCount++;
                 }
@@ -8071,6 +8188,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (isTopic) {
             infoHeaderRow = rowCount++;
+            if (!mOverrideHideId) {
+                idRow = rowCount++;
+            }
             usernameRow = rowCount++;
             notificationsSimpleRow = rowCount++;
             infoSectionRow = rowCount++;
@@ -8091,6 +8211,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         locationRow = rowCount++;
                     }
                 }
+                if (!mOverrideHideId) {
+                    idRow = rowCount++;
+                }
                 if (ChatObject.isPublic(currentChat)) {
                     usernameRow = rowCount++;
                 }
@@ -8104,6 +8227,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (infoHeaderRow != -1) {
                 notificationsDividerRow = rowCount++;
             }
+            if (idRow == -1 && !mOverrideHideId) {
+                idRow = rowCount++;
+            }
+
             notificationsRow = rowCount++;
             infoSectionRow = rowCount++;
 
@@ -10064,6 +10191,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         detailCell.setTextAndValue(value, LocaleController.getString("TapToChangePhone", R.string.TapToChangePhone), true);
                         detailCell.setContentDescriptionValueFirst(false);
+                    } else if (position == idRow) {
+                        long id = 0;
+                        if (userId != 0) {
+                            id = userId;
+                        } else if (chatId != 0) {
+                            id = chatId;
+                        }
+                        String value = String.valueOf(id);
+                        detailCell.setTextAndValue(value, "ID", true);
+                        detailCell.setContentDescriptionValueFirst(false);
                     } else if (position == setUsernameRow) {
                         TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
                         String text = "";
@@ -10494,7 +10631,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                 position == numberSectionRow || position == helpHeaderRow) {
                 return VIEW_TYPE_HEADER;
-            } else if (position == phoneRow || position == locationRow || position == numberRow || position == restrictionReasonRow || position == linkedUserRow) {
+            } else if (position == phoneRow || position == idRow || position == locationRow || position == numberRow || position == restrictionReasonRow || position == linkedUserRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == usernameRow || position == setUsernameRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE;
@@ -11756,6 +11893,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, emptyRow, sparseIntArray);
             put(++pointer, bottomPaddingRow, sparseIntArray);
             put(++pointer, infoHeaderRow, sparseIntArray);
+            put(++pointer, idRow, sparseIntArray);
             put(++pointer, phoneRow, sparseIntArray);
             put(++pointer, locationRow, sparseIntArray);
             put(++pointer, userInfoRow, sparseIntArray);
@@ -11799,6 +11937,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void updateIdText(boolean showDate, boolean animated) {
         if (!showDate && isPulledDown && !animated) {
+            return;
+        }
+        if (mOverrideHideId) {
             return;
         }
         idTextView.setTag(R.id.id_dc, null);
