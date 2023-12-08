@@ -8067,9 +8067,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
-                nullSectionRow = rowCount++;
-                nullRow = rowCount++;
-
                 settingsSectionRow = rowCount++;
 
                 Set<String> suggestions = getMessagesController().pendingSuggestions;
@@ -8096,6 +8093,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 devicesRow = rowCount++;
                 languageRow = rowCount++;
                 devicesSectionRow = rowCount++;
+
+                nullRow = rowCount++;
+                nullSectionRow = rowCount++;
+
                 if (!getMessagesController().premiumLocked) {
                     premiumRow = rowCount++;
                     premiumSectionsRow = rowCount++;
