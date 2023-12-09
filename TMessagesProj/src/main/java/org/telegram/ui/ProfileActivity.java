@@ -273,6 +273,7 @@ import top.qwq2333.nullgram.ui.AutoTranslatePopupWrapper;
 import top.qwq2333.nullgram.ui.BottomBuilder;
 import top.qwq2333.nullgram.ui.SimpleTextViewSwitcher;
 import top.qwq2333.nullgram.utils.AlertUtil;
+import top.qwq2333.nullgram.utils.Assertions;
 import top.qwq2333.nullgram.utils.Defines;
 import top.qwq2333.nullgram.utils.Log;
 import top.qwq2333.nullgram.utils.StringUtils;
@@ -5491,7 +5492,30 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                 })
                 .addIf(allowKick, R.drawable.msg_remove, LocaleController.getString("KickFromGroup", R.string.KickFromGroup), true, () -> {
-                    kickUser(selectedUser, participant);
+                    Assertions.check(user.id == selectedUser);
+                    Assertions.check(participant.user_id == selectedUser);
+                    StringBuilder msg = new StringBuilder();
+                    msg.append(user.id);
+                    if (!TextUtils.isEmpty(user.username)) {
+                        msg.append(", @");
+                        msg.append(user.username);
+                    }
+                    msg.append('\n');
+                    msg.append(user.first_name);
+                    if (!TextUtils.isEmpty(user.last_name)) {
+                        msg.append(" ");
+                        msg.append(user.last_name);
+                    }
+                    AlertDialog dialog = new AlertDialog.Builder(getParentActivity())
+                        .setTitle(LocaleController.getString("KickFromGroup", R.string.KickFromGroup))
+                        .setMessage(msg.toString())
+                        .setPositiveButton(LocaleController.getString("Ban", R.string.Ban), (dialogInterface, which) -> {
+                            kickUser(selectedUser, participant);
+                        })
+                        .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                        .create();
+                    showDialog(dialog);
+                    dialog.redPositive();
                 })
                 .setMinWidth(190)
                 .show();

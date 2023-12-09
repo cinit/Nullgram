@@ -84,6 +84,7 @@ import java.util.Collections;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import top.qwq2333.nullgram.utils.Assertions;
 import top.qwq2333.nullgram.utils.Log;
 
 public class ChatUsersActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -1740,10 +1741,34 @@ public class ChatUsersActivity extends BaseFragment implements NotificationCente
                     }
                 })
                 .addIf(ChatObject.canBlockUsers(currentChat) && canEditAdmin, R.drawable.msg_remove, isChannel ? LocaleController.getString("ChannelRemoveUser", R.string.ChannelRemoveUser) : LocaleController.getString("KickFromGroup", R.string.KickFromGroup), true, () -> {
-                    getMessagesController().deleteParticipantFromChat(chatId, user);
-                    removeParticipants(peerId);
-                    if (currentChat != null && user != null && BulletinFactory.canShowBulletin(this)) {
-                        BulletinFactory.createRemoveFromChatBulletin(this, user, currentChat.title).show();
+                    if (user != null) {
+                        Assertions.check(user.id == peerId);
+                        StringBuilder msg = new StringBuilder();
+                        msg.append(user.id);
+                        if (!TextUtils.isEmpty(user.username)) {
+                            msg.append(", @");
+                            msg.append(user.username);
+                        }
+                        msg.append('\n');
+                        msg.append(user.first_name);
+                        if (!TextUtils.isEmpty(user.last_name)) {
+                            msg.append(" ");
+                            msg.append(user.last_name);
+                        }
+                        AlertDialog dialog = new AlertDialog.Builder(getParentActivity())
+                            .setTitle(LocaleController.getString("KickFromGroup", R.string.KickFromGroup))
+                            .setMessage(msg.toString())
+                            .setPositiveButton(LocaleController.getString("Ban", R.string.Ban), (dialogInterface, which) -> {
+                                getMessagesController().deleteParticipantFromChat(chatId, user);
+                                removeParticipants(peerId);
+                                if (currentChat != null && BulletinFactory.canShowBulletin(this)) {
+                                    BulletinFactory.createRemoveFromChatBulletin(this, user, currentChat.title).show();
+                                }
+                            })
+                            .setNegativeButton(LocaleController.getString("Cancel", R.string.Cancel), null)
+                            .create();
+                        showDialog(dialog);
+                        dialog.redPositive();
                     }
                 })
                 .setMinWidth(190)
