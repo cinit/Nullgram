@@ -25,7 +25,7 @@ configurations {
 }
 
 var serviceAccountCredentialsFile = File(rootProject.projectDir, "service_account_credentials.json")
-val abiName = mapOf("armeabi-v7a" to "arm32", "arm64-v8a" to "arm64")
+val abiName = mapOf("armeabi-v7a" to "arm32", "arm64-v8a" to "arm64", "x86" to "x86", "x86_64" to "x86_64")
 
 if (serviceAccountCredentialsFile.isFile) {
     setupPlay(Version.isStable)
@@ -204,7 +204,7 @@ android {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a")
+            include("arm64-v8a", "x86_64")
         }
     }
 
