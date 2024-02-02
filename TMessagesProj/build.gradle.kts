@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.api.variant.BuildConfigField
-import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.text.SimpleDateFormat
@@ -26,7 +25,7 @@ configurations {
 }
 
 var serviceAccountCredentialsFile = File(rootProject.projectDir, "service_account_credentials.json")
-val abiName = mapOf("armeabi-v7a" to "arm32", "arm64-v8a" to "arm64", "x86" to "x86", "x86_64" to "x86_64")
+val abiName = mapOf("armeabi-v7a" to "arm32", "arm64-v8a" to "arm64")
 
 if (serviceAccountCredentialsFile.isFile) {
     setupPlay(Version.isStable)
@@ -72,11 +71,10 @@ dependencies {
     implementation(libs.firebase.config)
     implementation(libs.firebase.datatransport)
     implementation(libs.firebase.appindexing)
-    implementation(libs.play.services.auth)
     implementation(libs.play.services.vision)
-    implementation(libs.play.services.wearable)
     implementation(libs.play.services.location)
     implementation(libs.play.services.wallet)
+    implementation(libs.play.services.mlkit.vision)
 //    implementation("com.google.android.gms:play-services-safetynet:18.0.1")
     implementation(libs.isoparser)
     implementation(files("libs/stripe.aar"))
@@ -93,7 +91,6 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.osmdroid.android)
-    implementation(libs.billing)
     implementation(libs.guava)
 
     implementation(libs.ktor.client.core)
@@ -200,7 +197,6 @@ android {
                 )
             }
         }
-
         buildConfigField("String", "BUILD_TIME", "\"${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())}\"")
     }
 
@@ -208,22 +204,13 @@ android {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include("armeabi-v7a", "arm64-v8a")
         }
     }
 
     androidComponents {
         onVariants { variant ->
             variant.buildConfigFields.put("isPlay", BuildConfigField("boolean", variant.name == "play", null))
-            variant.outputs.forEach { output ->
-                val abi = output.filters.find { it.filterType == ABI }?.identifier
-                variant.buildConfigFields.put(
-                    "ABI", BuildConfigField(
-                        "String", "\"${abiName[abi]}\"",
-                        "this is just a compatibility solution and we are not using flavorProduct anymore"
-                    )
-                )
-            }
         }
     }
 

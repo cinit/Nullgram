@@ -865,6 +865,7 @@ public class Theme {
                 rad = heightHalf;
             }
             if (isOut) {
+                // LEFT-BOTTOM <- RIGHT-BOTTOM
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
                     int radToUse = botButtonsBottom ? nearRad : rad;
                     if (currentType == TYPE_MEDIA) {
@@ -880,10 +881,12 @@ public class Theme {
                     path.lineTo(bounds.left + padding, top - topY + currentBackgroundHeight);
                 }
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullTop) {
+                    // LEFT-BOTTOM -> LEFT-TOP
                     path.lineTo(bounds.left + padding, bounds.top + padding + rad);
                     rect.set(bounds.left + padding, bounds.top + padding, bounds.left + padding + rad * 2, bounds.top + padding + rad * 2);
                     path.arcTo(rect, 180, 90, false);
 
+                    // LEFT-TOP -> RIGHT-TOP
                     int radToUse = isTopNear ? nearRad : rad;
                     if (currentType == TYPE_MEDIA) {
                         path.lineTo(bounds.right - padding - radToUse, bounds.top + padding);
@@ -894,13 +897,17 @@ public class Theme {
                     }
                     path.arcTo(rect, 270, 90, false);
                 } else {
+                    // LEFT-BOTTOM -> LEFT-TOP
                     path.lineTo(bounds.left + padding, top - topY - dp(2));
+
+                    // LEFT-TOP -> RIGHT-TOP
                     if (currentType == TYPE_MEDIA) {
                         path.lineTo(bounds.right - padding, top - topY - dp(2));
                     } else {
                         path.lineTo(bounds.right - dp(8), top - topY - dp(2));
                     }
                 }
+                // RIGHT-TOP -> RIGHT-BOTTOM
                 if (currentType == TYPE_MEDIA) {
                     if (customPaint || drawFullBottom) {
                         int radToUse = isBottomNear ? nearRad : rad;
@@ -960,7 +967,7 @@ public class Theme {
                 }
                 if (currentType == TYPE_MEDIA) {
                     if (customPaint || drawFullBottom) {
-                        int radToUse = isBottomNear ? nearRad : rad;
+                        int radToUse = isBottomNear || botButtonsBottom ? nearRad : rad;
 
                         path.lineTo(bounds.left + padding, bounds.bottom - padding - radToUse);
                         rect.set(bounds.left + padding, bounds.bottom - padding - radToUse * 2, bounds.left + padding + radToUse * 2, bounds.bottom - padding);
@@ -1747,7 +1754,6 @@ public class Theme {
                 Math.max(0, Color.blue(submenuBackground) - 10)
             ));
 
-            currentColors.put(key_chat_inCodeBackground, codeBackground(inBubble, isDarkTheme));
             if (isDarkTheme && currentColors.get(key_chat_outBubbleGradient1) != 0) {
                 int outBubbleAverage = averageColor(currentColors, key_chat_outBubbleGradient1, key_chat_outBubbleGradient2, key_chat_outBubbleGradient3);
                 Color.colorToHSV(outBubbleAverage, tempHSV);
@@ -3101,7 +3107,7 @@ public class Theme {
     public static Paint avatar_backgroundPaint;
 
     public static Drawable listSelector;
-    public static Drawable[] avatarDrawables = new Drawable[18];
+    public static Drawable[] avatarDrawables = new Drawable[20];
 
     public static Drawable moveUpDrawable;
 
@@ -3638,6 +3644,9 @@ public class Theme {
     public static final int key_chat_inBubbleSelectedOverlay = colorsCount++;
     public static final int key_chat_inBubbleShadow = colorsCount++;
 
+    public static final int key_actionBarActionModeReaction = colorsCount++;
+    public static final int key_actionBarActionModeReactionDot = colorsCount++;
+
     //my messages bubbles
     public static final int myMessagesBubblesStartIndex = colorsCount;
     public static final int key_chat_outBubble = colorsCount++;
@@ -4128,7 +4137,6 @@ public class Theme {
     public static final int key_stories_circle_closeFriends1 = colorsCount++;
     public static final int key_stories_circle_closeFriends2 = colorsCount++;
 
-    public static final int key_code_background = colorsCount++;
     public static final int key_chat_inCodeBackground = colorsCount++;
     public static final int key_chat_outCodeBackground = colorsCount++;
     public static final int key_code_keyword = colorsCount++;
@@ -4422,6 +4430,8 @@ public class Theme {
         fallbackKeys.put(key_statisticChartLine_indigo, key_color_purple);
         fallbackKeys.put(key_statisticChartLine_cyan, key_color_cyan);
 
+        fallbackKeys.put(key_actionBarActionModeReaction, key_windowBackgroundGray);
+
         for (int i = 0; i < keys_avatar_background.length; i++) {
             themeAccentExclusionKeys.add(keys_avatar_background[i]);
         }
@@ -4447,6 +4457,7 @@ public class Theme {
         themeAccentExclusionKeys.add(key_statisticChartLine_lightgreen);
         themeAccentExclusionKeys.add(key_statisticChartLine_orange);
         themeAccentExclusionKeys.add(key_statisticChartLine_indigo);
+        themeAccentExclusionKeys.add(key_chat_inCodeBackground);
 
         themeAccentExclusionKeys.add(key_voipgroup_checkMenu);
         themeAccentExclusionKeys.add(key_voipgroup_muteButton);
@@ -5862,7 +5873,7 @@ public class Theme {
                     ripple = new ShapeDrawable(new RectShape());
                     ((ShapeDrawable) ripple).getPaint().setColor(rippleColor);
                 }
-                Drawable pressed = new LayerDrawable(new Drawable[] { background, ripple });
+                Drawable pressed = background == null ? ripple : new LayerDrawable(new Drawable[] { background, ripple });
                 stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressed);
                 stateListDrawable.addState(new int[]{android.R.attr.state_selected}, pressed);
                 stateListDrawable.addState(StateSet.WILD_CARD, background);
@@ -5896,7 +5907,7 @@ public class Theme {
             } else {
                 StateListDrawable stateListDrawable = new StateListDrawable();
                 Drawable ripple = new CircleDrawable(radius, rippleColor);
-                Drawable pressed = new LayerDrawable(new Drawable[] { background, ripple });
+                Drawable pressed = background == null ? ripple : new LayerDrawable(new Drawable[] { background, ripple });
                 stateListDrawable.addState(new int[]{android.R.attr.state_pressed}, pressed);
                 stateListDrawable.addState(new int[]{android.R.attr.state_selected}, pressed);
                 stateListDrawable.addState(StateSet.WILD_CARD, background);
@@ -8246,6 +8257,8 @@ public class Theme {
             avatarDrawables[15] = resources.getDrawable(R.drawable.filled_unknown);
             avatarDrawables[16] = resources.getDrawable(R.drawable.filled_unclaimed);
             avatarDrawables[17] = resources.getDrawable(R.drawable.large_repost_story);
+            avatarDrawables[18] = resources.getDrawable(R.drawable.large_hidden);
+            avatarDrawables[19] = resources.getDrawable(R.drawable.large_notes);
 
             if (dialogs_archiveAvatarDrawable != null) {
                 dialogs_archiveAvatarDrawable.setCallback(null);
@@ -8795,7 +8808,7 @@ public class Theme {
             chat_shareIconDrawable = resources.getDrawable(R.drawable.filled_button_share).mutate();
             chat_replyIconDrawable = resources.getDrawable(R.drawable.filled_button_reply);
             chat_closeIconDrawable = resources.getDrawable(R.drawable.msg_voiceclose).mutate();
-            chat_goIconDrawable = resources.getDrawable(R.drawable.message_arrow);
+            chat_goIconDrawable = resources.getDrawable(R.drawable.filled_open_message);
 
             int rad = AndroidUtilities.dp(2);
             RectF rect = new RectF();
@@ -9979,9 +9992,13 @@ public class Theme {
                     MotionBackgroundDrawable motionBackgroundDrawable = new MotionBackgroundDrawable(backgroundColor, gradientToColor1, gradientToColor2, gradientToColor3, false);
                     Bitmap patternBitmap = null;
 
-                    if (wallpaperFile != null && wallpaperDocument != null) {
-                        File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
-                        patternBitmap = SvgHelper.getBitmap(f, AndroidUtilities.dp(360), AndroidUtilities.dp(640), false);
+                    if (wallpaperFile != null) {
+                        if (wallpaperDocument != null) {
+                            File f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(wallpaperDocument, true);
+                            patternBitmap = SvgHelper.getBitmap(f, AndroidUtilities.dp(360), AndroidUtilities.dp(640), false);
+                        } else {
+                            patternBitmap = SvgHelper.getBitmap(R.raw.default_pattern, AndroidUtilities.dp(360), AndroidUtilities.dp(640), Color.WHITE);
+                        }
                         if (patternBitmap != null) {
                             FileOutputStream stream = null;
                             try {

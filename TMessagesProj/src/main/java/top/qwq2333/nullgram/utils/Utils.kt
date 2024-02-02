@@ -28,6 +28,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.util.Base64
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow.ActionBarPopupWindowLayout
 import org.telegram.ui.ActionBar.BaseFragment
 import org.telegram.ui.Components.AlertsCreator
 import org.telegram.ui.Components.BulletinFactory
+import org.telegram.ui.Components.LayoutHelper
 import top.qwq2333.gen.Config
 import top.qwq2333.nullgram.activity.DatacenterActivity
 import top.qwq2333.nullgram.remote.NicegramController
@@ -56,6 +58,7 @@ import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.util.Locale
+import java.util.zip.ZipFile
 
 
 object Utils {
@@ -299,6 +302,26 @@ object Utils {
         }
     }
 
+    @JvmStatic
+    val abi: String by lazy {
+        val apkFile = ZipFile(ApplicationLoader.applicationContext.applicationInfo.sourceDir)
+        try {
+            val libFolder = apkFile.entries().asSequence().find { it.name.contains("libtmessages") }!!
+            when (libFolder.name.split("/")[1]) {
+                "arm64-v8a" -> "arm64"
+                "armeabi-v7a" -> "arm32"
+                "x86" -> "x86"
+                "x86_64" -> "x86_64"
+                else -> "unknown"
+            }
+        } catch (e: Exception) {
+            Log.e(e)
+            "unknown"
+        } finally {
+            apkFile.close()
+        }
+    }
+
 }
 
 fun String.encodeUrl(): String = URLEncoder.encode(this, "UTF-8")
@@ -319,4 +342,9 @@ internal inline fun runOnIoDispatcher(crossinline block: ()->Unit) {
     CoroutineScope(Dispatchers.IO).launch {
         block()
     }
+}
+
+internal inline fun LinearLayout.addView(view: View, init: LinearLayout.LayoutParams.() -> Unit) {
+    addView(view, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT) // default params
+        .apply(init))
 }

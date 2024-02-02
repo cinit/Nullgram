@@ -123,9 +123,6 @@ import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
 import com.google.android.exoplayer2.util.Consumer;
-import com.google.android.gms.auth.api.phone.SmsRetriever;
-import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
-import com.google.android.gms.tasks.Task;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.browser.Browser;
@@ -152,6 +149,8 @@ import org.telegram.ui.Components.HideViewAfterAnimation;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
 import org.telegram.ui.Components.PickerBottomLayout;
+import org.telegram.ui.Components.PipRoundVideoView;
+import org.telegram.ui.Components.PipVideoOverlay;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -1974,22 +1973,6 @@ public class AndroidUtilities {
     }
 
     public static void setWaitingForSms(boolean value) {
-        synchronized (smsLock) {
-            waitingForSms = value;
-            try {
-                if (waitingForSms) {
-                    SmsRetrieverClient client = SmsRetriever.getClient(ApplicationLoader.applicationContext);
-                    Task<Void> task = client.startSmsRetriever();
-                    task.addOnSuccessListener(aVoid -> {
-                        if (BuildVars.DEBUG_VERSION) {
-                            FileLog.d("sms listener registered");
-                        }
-                    });
-                }
-            } catch (Throwable e) {
-                FileLog.e(e);
-            }
-        }
     }
 
     public static int getShadowHeight() {
@@ -4893,6 +4876,10 @@ public class AndroidUtilities {
     }
 
     public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, boolean animated) {
+        updateViewVisibilityAnimated(view, show, scaleFactor, goneOnHide, 1f, animated);
+    }
+
+    public static void updateViewVisibilityAnimated(View view, boolean show, float scaleFactor, boolean goneOnHide, float maxAlpha, boolean animated) {
         if (view == null) {
             return;
         }
@@ -4904,7 +4891,7 @@ public class AndroidUtilities {
             view.animate().setListener(null).cancel();
             view.setVisibility(show ? View.VISIBLE : (goneOnHide ? View.GONE : View.INVISIBLE));
             view.setTag(show ? 1 : null);
-            view.setAlpha(1f);
+            view.setAlpha(maxAlpha);
             view.setScaleX(1f);
             view.setScaleY(1f);
         } else if (show && view.getTag() == null) {
@@ -4915,7 +4902,7 @@ public class AndroidUtilities {
                 view.setScaleX(scaleFactor);
                 view.setScaleY(scaleFactor);
             }
-            view.animate().alpha(1f).scaleY(1f).scaleX(1f).setDuration(150).start();
+            view.animate().alpha(maxAlpha).scaleY(1f).scaleX(1f).setDuration(150).start();
             view.setTag(1);
         } else if (!show && view.getTag() != null) {
             view.animate().setListener(null).cancel();
@@ -5112,7 +5099,7 @@ public class AndroidUtilities {
         );
     }
 
-    public static CharSequence replaceCharSequence(String what, CharSequence from, CharSequence obj) {
+    public static SpannableStringBuilder replaceCharSequence(String what, CharSequence from, CharSequence obj) {
         SpannableStringBuilder spannableStringBuilder;
         if (from instanceof SpannableStringBuilder) {
             spannableStringBuilder = (SpannableStringBuilder) from;
@@ -5221,6 +5208,9 @@ public class AndroidUtilities {
             int[] location = new int[2];
             for (int i = 0; i < finalViews.size(); ++i) {
                 View view = finalViews.get(i);
+                if (view instanceof PipRoundVideoView.PipFrameLayout || view instanceof PipRoundVideoView.PipFrameLayout) {
+                    continue;
+                }
 
                 ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
                 if (layoutParams instanceof WindowManager.LayoutParams) {
@@ -5241,14 +5231,14 @@ public class AndroidUtilities {
                 canvas.restore();
             }
             Utilities.stackBlurBitmap(bitmap, Math.max((int) amount, Math.max(w, h) / 180));
-            AndroidUtilities.runOnUIThread(() -> {
+//            AndroidUtilities.runOnUIThread(() -> {
                 onBitmapDone.run(bitmap);
-            });
+//            });
         } catch (Exception e) {
             FileLog.e(e);
-            AndroidUtilities.runOnUIThread(() -> {
+//            AndroidUtilities.runOnUIThread(() -> {
                 onBitmapDone.run(null);
-            });
+//            });
         }
         //   });
     }

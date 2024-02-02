@@ -188,6 +188,8 @@ public class ThemeColors {
         defaultColors[key_actionBarDefaultSubmenuBackground] = 0xffffffff;
         defaultColors[key_actionBarDefaultSubmenuSeparator] = 0xfff5f5f5;
         defaultColors[key_actionBarActionModeDefaultSelector] = 0xffe2e2e2;
+        defaultColors[key_actionBarActionModeReaction] = 0xfff0f0f0;
+        defaultColors[key_actionBarActionModeReactionDot] = 0xffc0c0c0;
         defaultColors[key_actionBarTabActiveText] = 0xffffffff;
         defaultColors[key_actionBarTabUnactiveText] = 0xffd5e8f7;
         defaultColors[key_actionBarTabLine] = 0xffffffff;
@@ -771,8 +773,7 @@ public class ThemeColors {
         defaultColors[key_stories_circle_closeFriends1] = 0xFFC9EB38;
         defaultColors[key_stories_circle_closeFriends2] = 0xFF09C167;
 
-        defaultColors[key_code_background] = 0x20000000;
-        defaultColors[key_chat_inCodeBackground] = 0x08484848;
+        defaultColors[key_chat_inCodeBackground] = 0xff6F889E;
         defaultColors[key_chat_outCodeBackground] = 0x123c7503;
         defaultColors[key_code_keyword] = 0xFFE05356;
         defaultColors[key_code_operator] = 0xFF4DBBFF;
@@ -955,6 +956,8 @@ public class ThemeColors {
         colorKeysMap.put(key_actionBarActionModeDefaultTop, "actionBarActionModeDefaultTop");
         colorKeysMap.put(key_actionBarActionModeDefaultIcon, "actionBarActionModeDefaultIcon");
         colorKeysMap.put(key_actionBarActionModeDefaultSelector, "actionBarActionModeDefaultSelector");
+        colorKeysMap.put(key_actionBarActionModeReaction, "actionBarActionModeReaction");
+        colorKeysMap.put(key_actionBarActionModeReactionDot, "actionBarActionModeReactionDot");
         colorKeysMap.put(key_actionBarDefaultTitle, "actionBarDefaultTitle");
         colorKeysMap.put(key_actionBarDefaultSubtitle, "actionBarDefaultSubtitle");
         colorKeysMap.put(key_actionBarDefaultSearch, "actionBarDefaultSearch");
@@ -1513,7 +1516,6 @@ public class ThemeColors {
         colorKeysMap.put(key_stories_circle_dialog2, "stories_circle_dialog2");
         colorKeysMap.put(key_stories_circle_closeFriends1, "stories_circle_closeFriends1");
         colorKeysMap.put(key_stories_circle_closeFriends2, "stories_circle_closeFriends2");
-        colorKeysMap.put(key_code_background, "code_background");
         colorKeysMap.put(key_chat_inCodeBackground, "chat_inCodeBackground");
         colorKeysMap.put(key_chat_outCodeBackground, "chat_outCodeBackground");
         colorKeysMap.put(key_code_keyword, "code_keyword");

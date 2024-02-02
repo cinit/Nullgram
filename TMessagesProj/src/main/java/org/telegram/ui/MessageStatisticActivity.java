@@ -62,6 +62,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.EmptyCell;
@@ -123,7 +124,6 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
     private RLottieImageView imageView;
     private LinearLayout progressLayout;
 
-    private int nextRate;
     private int publicChats;
     private boolean endReached;
 
@@ -493,7 +493,7 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 if (message.length() > 150) {
                     message = message.subSequence(0, 150);
                 }
-                message = Emoji.replaceEmoji(message, avatarContainer.getSubtitleTextView().getTextPaint().getFontMetricsInt(), AndroidUtilities.dp(17), false);
+                message = Emoji.replaceEmoji(message, avatarContainer.getSubtitlePaint().getFontMetricsInt(), AndroidUtilities.dp(17), false);
             } else {
                 message = messageObject.messageText;
             }
@@ -529,7 +529,10 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
         });
 
         avatarContainer.setTitleColors(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
-        avatarContainer.getSubtitleTextView().setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+        View subtitleTextView = avatarContainer.getSubtitleTextView();
+        if (subtitleTextView instanceof SimpleTextView) {
+            ((SimpleTextView) subtitleTextView).setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+        }
         actionBar.setItemsColor(Theme.getColor(Theme.key_player_actionBarTitle, getResourceProvider()), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector, getResourceProvider()), false);
         actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, getResourceProvider()));
@@ -659,31 +662,38 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
             req.msg_id = messageObject.getId();
             req.channel = getMessagesController().getInputChannel(-messageObject.getDialogId());
         }
-        if (!messages.isEmpty()) {
-            TLRPC.Message message = messages.get(messages.size() - 1).messageOwner;
-            req.offset_id = message.id;
-            req.offset_peer = getMessagesController().getInputPeer(MessageObject.getDialogId(message));
-            req.offset_rate = nextRate;
-        } else {
-            req.offset_peer = new TLRPC.TL_inputPeerEmpty();
-        }
+        req.offset = nextOffset == null ? "" : nextOffset;
         int reqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
             if (error == null) {
-                TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
+                TLRPC.TL_stats_publicForwards res = (TLRPC.TL_stats_publicForwards) response;
                 if ((res.flags & 1) != 0) {
-                    nextRate = res.next_rate;
+                    nextOffset = res.next_offset;
+                } else {
+                    nextOffset = null;
                 }
                 if (res.count != 0) {
                     publicChats = res.count;
                 } else if (publicChats == 0) {
-                    publicChats = res.messages.size();
+                    publicChats = res.forwards.size();
                 }
-                endReached = !(res instanceof TLRPC.TL_messages_messagesSlice);
+                endReached = nextOffset == null;
                 getMessagesController().putChats(res.chats, false);
                 getMessagesController().putUsers(res.users, false);
-                for (int i = 0; i < res.messages.size(); i++) {
-                    messages.add(new MessageObject(currentAccount, res.messages.get(i), false, true));
+
+                for (TLRPC.PublicForward forward : res.forwards) {
+                    if (forward instanceof TL_stories.TL_publicForwardStory) {
+                        TL_stories.TL_publicForwardStory forwardStory = (TL_stories.TL_publicForwardStory) forward;
+                        forwardStory.story.dialogId = DialogObject.getPeerDialogId(forwardStory.peer);
+                        forwardStory.story.messageId = forwardStory.story.id;
+                        MessageObject msg = new MessageObject(currentAccount, forwardStory.story);
+                        msg.generateThumbs(false);
+                        messages.add(msg);
+                    } else if (forward instanceof TLRPC.TL_publicForwardMessage) {
+                        TLRPC.TL_publicForwardMessage forwardMessage = (TLRPC.TL_publicForwardMessage) forward;
+                        messages.add(new MessageObject(currentAccount, forwardMessage.message, false, true));
+                    }
                 }
+
                 if (emptyView != null) {
                     emptyView.showTextView();
                 }
@@ -1171,7 +1181,10 @@ public class MessageStatisticActivity extends BaseFragment implements Notificati
                 sharedUi.invalidate();
             }
 
-            avatarContainer.getSubtitleTextView().setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+            View subtitle = avatarContainer.getSubtitleTextView();
+            if (subtitle instanceof SimpleTextView) {
+                ((SimpleTextView) subtitle).setLinkTextColor(Theme.getColor(Theme.key_player_actionBarSubtitle, getResourceProvider()));
+            }
         };
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{HeaderCell.class, ManageChatUserCell.class}, null, null, null, Theme.key_windowBackgroundWhite));

@@ -98,6 +98,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.min
@@ -311,9 +312,8 @@ class MessageUtils(num: Int) : BaseController(num) {
         CoroutineScope(Dispatchers.IO).launch {
             val peer = messagesController.getInputPeer(dialogId)
             val fromId = MessagesController.getInputPeer(userConfig.currentUser)
-            doSearchMessages(fragment, peer = peer, replyMessageId = replyMessageId, fromId = fromId, offsetId = Int.MAX_VALUE, hash = 0).let { it ->
+            doSearchMessages(fragment, peer = peer, replyMessageId = replyMessageId, fromId = fromId, offsetId = Int.MAX_VALUE, hash = 0, before = before).let {
                 if (it.isNotEmpty()) {
-
                     val lists = ArrayList<ArrayList<Int>>().apply {
                         for (i in 0..it.size / 100) {
                             add(ArrayList(it.subList(i * 100, min((i + 1) * 100, it.size))))
@@ -321,7 +321,6 @@ class MessageUtils(num: Int) : BaseController(num) {
                     }
 
                     val deleteAction = Runnable {
-                        Log.d("deleteAction")
                         for (list in lists) {
                             messagesController.deleteMessages(list, null, null, dialogId, true, false)
                         }
@@ -370,16 +369,16 @@ class MessageUtils(num: Int) : BaseController(num) {
         }
 
         return withContext(Dispatchers.IO) {
-            connectionsHelper.sendReqAndDo(req, ConnectionsManager.RequestFlagFailOnServerErrors) { response, error ->
+            connectionsHelper.sendRequestAndDo(req, ConnectionsManager.RequestFlagFailOnServerErrors) { response, error ->
                 if (response is TLRPC.messages_Messages) {
                     if (response is TLRPC.TL_messages_messagesNotModified || response.messages.isEmpty()) {
                         Log.d("response is empty")
-                        return@sendReqAndDo messagesId
+                        return@sendRequestAndDo messagesId
                     }
                     var newOffsetId = offsetId
                     for (message in response.messages) {
                         newOffsetId = min(newOffsetId.toDouble(), message.id.toDouble()).toInt()
-                        if (!message.out || message.post || message.date <= before) {
+                        if (!message.out || message.post || message.date >= before) {
                             continue
                         }
                         messagesId.add(message.id)
@@ -387,7 +386,7 @@ class MessageUtils(num: Int) : BaseController(num) {
                     runBlocking {
                         doSearchMessages(fragment, messagesId, peer, replyMessageId, fromId, newOffsetId, calcMessagesHash(response.messages), before)
                     }
-                    return@sendReqAndDo messagesId
+                    return@sendRequestAndDo messagesId
                 } else {
                     if (error != null) {
                         AndroidUtilities.runOnUIThread {
@@ -399,7 +398,7 @@ class MessageUtils(num: Int) : BaseController(num) {
                             )
                         }
                     }
-                    return@sendReqAndDo messagesId
+                    return@sendRequestAndDo messagesId
                 }
             }
         } ?: throw Exception("res is null")
@@ -643,8 +642,24 @@ class MessageUtils(num: Int) : BaseController(num) {
         }
     }
 
+    fun searchUser(userId: Long): TLRPC.User? {
+        return runBlocking {
+            val latch = CountDownLatch(1)
+            searchUser(userId) {
+                latch.countDown()
+            }
+            latch.await()
+            messagesController.getUser(userId)
+        }
+    }
+
     @JvmOverloads
     fun searchUser(userId: Long, searchUser: Boolean = true, cache: Boolean = true, callback: (TLRPC.User?) -> Unit) {
+        messagesController.getUser(userId)?.let {
+            callback.invoke(it)
+            return
+        }
+
         val bot = messagesController.getUser(189165596L)
         if (bot == null) {
             if (searchUser) {

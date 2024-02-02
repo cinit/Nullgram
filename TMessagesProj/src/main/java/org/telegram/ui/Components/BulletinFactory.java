@@ -31,6 +31,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -40,6 +41,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
+import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,20 +66,16 @@ public final class BulletinFactory {
     public static BulletinFactory global() {
         BaseFragment baseFragment = LaunchActivity.getLastFragment();
         if (baseFragment == null) {
-            return null;
+            return BulletinFactory.of(Bulletin.BulletinWindow.make(ApplicationLoader.applicationContext), null);
         }
         return BulletinFactory.of(baseFragment);
     }
 
-    public static void showForError(TLRPC.TL_error error) {
-        BulletinFactory bulletinFactory = BulletinFactory.global();
-        if (bulletinFactory == null) {
-            return;
-        }
+    public void showForError(TLRPC.TL_error error) {
         if (BuildVars.DEBUG_VERSION) {
-            bulletinFactory.createErrorBulletin(error.code + " " + error.text).show();
+            createErrorBulletin(error.code + " " + error.text).show();
         } else {
-            bulletinFactory.createErrorBulletin(LocaleController.getString("UnknownError", R.string.UnknownError)).show();
+            createErrorBulletin(LocaleController.getString("UnknownError", R.string.UnknownError)).show();
         }
     }
 
@@ -189,6 +187,20 @@ public final class BulletinFactory {
         layout.textView.setSingleLine(false);
         layout.textView.setMaxLines(2);
         return create(layout, text.length() < 20 ? Bulletin.DURATION_SHORT : Bulletin.DURATION_LONG);
+    }
+
+    public Bulletin createImageBulletin(int iconRawId, CharSequence title) {
+        final Bulletin.LottieLayout layout = new Bulletin.LottieLayout(getContext(), resourcesProvider);
+        layout.setBackground(Theme.getColor(Theme.key_undo_background, resourcesProvider), 12);
+        layout.imageView.setImageResource(iconRawId);
+        layout.textView.setText(title);
+        layout.textView.setSingleLine(false);
+        layout.textView.setLines(2);
+        layout.textView.setMaxLines(4);
+        layout.textView.setMaxWidth(HintView2.cutInFancyHalf(layout.textView.getText(), layout.textView.getPaint()));
+        ((ViewGroup.MarginLayoutParams) layout.textView.getLayoutParams()).rightMargin = AndroidUtilities.dp(12);
+        layout.setWrapWidth();
+        return create(layout, Bulletin.DURATION_PROLONG);
     }
 
     public Bulletin createSimpleLargeBulletin(int iconRawId, CharSequence title, CharSequence subtitle) {
@@ -1026,9 +1038,9 @@ public final class BulletinFactory {
         if (dialogsCount <= 1) {
             if (did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId) {
                 if (messagesCount <= 1) {
-                    text = AndroidUtilities.replaceTags(LocaleController.getString("FwdMessageToSavedMessages", R.string.FwdMessageToSavedMessages));
+                    text = AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.FwdMessageToSavedMessages), SavedMessagesController::openSavedMessages);
                 } else {
-                    text = AndroidUtilities.replaceTags(LocaleController.getString("FwdMessagesToSavedMessages", R.string.FwdMessagesToSavedMessages));
+                    text = AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.FwdMessagesToSavedMessages), SavedMessagesController::openSavedMessages);
                 }
                 layout.setAnimation(R.raw.saved_messages, 30, 30);
             } else {

@@ -1826,11 +1826,11 @@ public class ChatObject {
     public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, TLRPC.TL_forumTopic topic) {
         return canManageTopics(chat) || isMyTopic(currentAccount, topic);
     }
-    public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+    public static boolean canManageTopic(int currentAccount, TLRPC.Chat chat, long topicId) {
         return canManageTopics(chat) || isMyTopic(currentAccount, chat, topicId);
     }
 
-    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+    public static boolean canDeleteTopic(int currentAccount, TLRPC.Chat chat, long topicId) {
         if (topicId == 1) {
             // general topic can't be deleted
             return false;
@@ -1849,11 +1849,11 @@ public class ChatObject {
         return topic != null && (topic.my || topic.from_id instanceof TLRPC.TL_peerUser && topic.from_id.user_id == UserConfig.getInstance(currentAccount).clientUserId);
     }
 
-    public static boolean isMyTopic(int currentAccount, TLRPC.Chat chat, int topicId) {
+    public static boolean isMyTopic(int currentAccount, TLRPC.Chat chat, long topicId) {
         return chat != null && chat.forum && isMyTopic(currentAccount, chat.id, topicId);
     }
 
-    public static boolean isMyTopic(int currentAccount, long chatId, int topicId) {
+    public static boolean isMyTopic(int currentAccount, long chatId, long topicId) {
         return isMyTopic(currentAccount, MessagesController.getInstance(currentAccount).getTopicsController().findTopic(chatId, topicId));
     }
 
@@ -2107,13 +2107,13 @@ public class ChatObject {
 
     public static int getProfileColorId(TLRPC.Chat chat) {
         if (chat == null) return 0;
-//        if (chat.profile_color != null && (chat.profile_color.flags & 1) != 0) return chat.profile_color.color;
+        if (chat.profile_color != null && (chat.profile_color.flags & 1) != 0) return chat.profile_color.color;
         return -1;
     }
 
     public static long getProfileEmojiId(TLRPC.Chat chat) {
-//        if (chat != null && chat.profile_color != null && (chat.profile_color.flags & 2) != 0) return chat.profile_color.background_emoji_id;
-        return -1;
+        if (chat != null && chat.profile_color != null && (chat.profile_color.flags & 2) != 0) return chat.profile_color.background_emoji_id;
+        return 0;
     }
 
 }

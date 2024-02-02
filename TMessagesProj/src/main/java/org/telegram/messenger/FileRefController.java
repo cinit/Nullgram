@@ -248,7 +248,7 @@ public class FileRefController extends BaseController {
         }
         if (parentObject instanceof MessageObject) {
             MessageObject messageObject = (MessageObject) parentObject;
-            if (messageObject.getRealId() < 0 && messageObject.messageOwner.media.webpage != null) {
+            if (messageObject.getRealId() < 0 && messageObject.messageOwner != null && messageObject.messageOwner.media != null && messageObject.messageOwner.media.webpage != null) {
                 parentObject = messageObject.messageOwner.media.webpage;
             }
         }
@@ -1076,11 +1076,14 @@ public class FileRefController extends BaseController {
                     TL_stories.StoryItem storyItem = stories.stories.get(0);
                     if (storyItem.media != null) {
                         newStoryItem = storyItem;
-                        if (storyItem.media.photo != null) {
+                        if (result == null && storyItem.media.photo != null) {
                             result = getFileReference(storyItem.media.photo, requester.location, needReplacement, locationReplacement);
                         }
-                        if (storyItem.media.document != null) {
+                        if (result == null && storyItem.media.document != null) {
                             result = getFileReference(storyItem.media.document, requester.location, needReplacement, locationReplacement);
+                        }
+                        if (result == null && storyItem.media.alt_document != null) {
+                            result = getFileReference(storyItem.media.alt_document, requester.location, needReplacement, locationReplacement);
                         }
                     }
                 }
