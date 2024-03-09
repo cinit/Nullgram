@@ -55,9 +55,6 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics.ndk)
 
-    implementation(libs.appcenter.analytics)
-    implementation(libs.appcenter.crashes)
-
     implementation(libs.core.ktx)
     implementation(libs.palette.ktx)
     implementation(libs.exifinterface)
