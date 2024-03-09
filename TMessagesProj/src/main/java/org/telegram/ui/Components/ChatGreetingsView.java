@@ -5,11 +5,9 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.text.Layout;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -18,7 +16,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DocumentObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.ImageLocation;
@@ -29,17 +26,14 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserObject;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
-import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Premium.PremiumButtonView;
 import org.telegram.ui.Components.Premium.StarParticlesView;
 import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PremiumPreviewFragment;
-import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.Locale;
@@ -75,6 +69,7 @@ public class ChatGreetingsView extends LinearLayout {
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         descriptionView.setGravity(Gravity.CENTER_HORIZONTAL);
         stickerToSendView = new BackupImageView(context);
+        ScaleStateListAnimator.apply(stickerToSendView);
         updateLayout();
 
         updateColors();
@@ -95,7 +90,7 @@ public class ChatGreetingsView extends LinearLayout {
         }
     }
 
-    private ImageView premiumIconView;
+    private RLottieImageView premiumIconView;
     private TextView premiumTextView;
     private TextView premiumButtonView;
 
@@ -105,12 +100,17 @@ public class ChatGreetingsView extends LinearLayout {
         premiumLock = lock;
         if (premiumLock) {
             if (premiumIconView == null) {
-                premiumIconView = new ImageView(getContext());
+                premiumIconView = new RLottieImageView(getContext());
                 premiumIconView.setScaleType(ImageView.ScaleType.CENTER);
                 premiumIconView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
                 premiumIconView.setBackground(Theme.createCircleDrawable(dp(78), 0x1c000000));
-                premiumIconView.setImageResource(R.drawable.large_message_lock);
+                premiumIconView.setAnimation(R.raw.large_message_lock, 80, 80);
+                premiumIconView.setOnClickListener(v -> {
+                    premiumIconView.setProgress(0);
+                    premiumIconView.playAnimation();
+                });
             }
+            premiumIconView.playAnimation();
             if (premiumTextView == null) {
                 premiumTextView = new TextView(getContext());
                 premiumTextView.setTextAlignment(TEXT_ALIGNMENT_CENTER);

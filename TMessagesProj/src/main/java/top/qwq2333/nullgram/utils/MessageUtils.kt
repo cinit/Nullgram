@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 qwq233 <qwq233@qwq2333.top>
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
  * https://github.com/qwq233/Nullgram
  *
  * This program is free software; you can redistribute it and/or
@@ -221,7 +221,7 @@ class MessageUtils(num: Int) : BaseController(num) {
                 }
             } else {
                 deleteUserHistoryWithSearch(
-                    fragment, -chat.id, forumTopic?.id ?: 0, mergeDialogId
+                    fragment, -chat.id, forumTopic?.id ?: 0, mergeDialogId, before = connectionsManager.currentTime
                 ) { count: Int, deleteAction: Runnable? ->
                     showDeleteHistoryBulletin(fragment, count, true, resourcesProvider, deleteAction)
                 }
@@ -640,6 +640,36 @@ class MessageUtils(num: Int) : BaseController(num) {
                 }
             }
         }
+    }
+
+    fun searchUser(userName: String, callback: (TLRPC.User?) -> Unit) {
+        val req = TLRPC.TL_contacts_resolveUsername().apply {
+            username = userName
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            connectionsHelper.sendRequestAndDo(req) { response, error ->
+                if (response is TLRPC.TL_contacts_resolvedPeer) {
+                    messagesController.putUsers(response.users, false)
+                    messagesController.putChats(response.chats, false)
+                    messagesStorage.putUsersAndChats(response.users, response.chats, true, true)
+                    callback.invoke(messagesController.getUser(response.peer.user_id))
+                } else {
+                    callback.invoke(null)
+                }
+            }
+
+        }
+    }
+
+    fun searchUser(userName: String): TLRPC.User? {
+        var user: TLRPC.User? = null
+        val latch = CountDownLatch(1)
+        searchUser(userName) {
+            user = it
+            latch.countDown()
+        }
+        latch.await()
+        return user
     }
 
     fun searchUser(userId: Long): TLRPC.User? {

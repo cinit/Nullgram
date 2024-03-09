@@ -1,43 +1,39 @@
 [versions]
-agp = "8.2.1"
-appCenter = "5.0.4"
+agp = "8.2.2"
 checkerCompatQual = "2.5.6"
 core = "4.6.2"
 dynamicanimation = "1.0.0"
 exifinterface = "1.3.7"
 coreKtx = "1.12.0"
 fragment = "1.6.2"
-firebase = "32.7.1"
+firebase = "32.7.3"
 firebaseAppindexing = "20.0.0"
-firebaseConfig = "21.6.0"
-firebaseDatatransport = "18.2.0"
-firebaseMessaging = "23.4.0"
+firebaseConfig = "21.6.2"
+firebaseDatatransport = "18.2.1"
+firebaseMessaging = "23.4.1"
 gson = "2.10.1"
 guava = "33.0.0-jre"
 hiddenapibypass = "4.3"
 interpolator = "1.0.0"
 isoparser = "1.0.6" # DO NOT UPDATE THIS DEPENDENCY
 kotlin = "1.9.22"
-ksp = "1.9.22-1.0.17"
+ksp = "1.9.22-1.0.18"
 poet = "1.16.0"
-kotlinxCoroutinesAndroid = "1.7.3"
-kotlinxSerializationJson = "1.6.2"
-ktor = "2.3.7"
-languageId = "17.0.4"
+kotlinxCoroutinesAndroid = "1.8.0"
+kotlinxSerializationJson = "1.6.3"
+ktor = "2.3.8"
+languageId = "17.0.5"
 licensesdialog = "2.2.0"
 osmdroidAndroid = "6.1.18"
-playServicesWallet = "19.2.1"
-playServicesLocation = "21.0.1"
+playServicesLocation = "21.1.0"
 playServicesVision = "20.1.3"
 mlkitVision = "16.0.0-beta1"
-processPhoenix = "2.1.2"
+processPhoenix = "2.2.0"
 sharetarget = "1.2.0"
 paletteKtx = "1.0.0"
 rust = "0.9.3"
 
 [libraries]
-appcenter-analytics = { module = "com.microsoft.appcenter:appcenter-analytics", version.ref = "appCenter" }
-appcenter-crashes = { module = "com.microsoft.appcenter:appcenter-crashes", version.ref = "appCenter" }
 checker-compat-qual = { module = "org.checkerframework:checker-compat-qual", version.ref = "checkerCompatQual" }
 dynamicanimation = { module = "androidx.dynamicanimation:dynamicanimation", version.ref = "dynamicanimation" }
 exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "exifinterface" }
@@ -62,7 +58,6 @@ language-id = { module = "com.google.mlkit:language-id", version.ref = "language
 licensesdialog = { module = "de.psdev.licensesdialog:licensesdialog", version.ref = "licensesdialog" }
 markwon-core = { module = "io.noties.markwon:core", version.ref = "core" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }
-play-services-wallet = { module = "com.google.android.gms:play-services-wallet", version.ref = "playServicesWallet" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 play-services-vision = { module = "com.google.android.gms:play-services-vision", version.ref = "playServicesVision" }
 play-services-mlkit-vision = { module = "com.google.android.gms:play-services-mlkit-subject-segmentation", version.ref = "mlkitVision" }
@@ -84,7 +79,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "2.9.9" }
-google-services = { id = "com.google.gms.google-services", version = "4.4.0" }
-triplet-play = { id = "com.github.triplet.play", version = "3.8.6" }
+google-services = { id = "com.google.gms.google-services", version = "4.4.1" }
+triplet-play = { id = "com.github.triplet.play", version = "3.9.0" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 rust = { id = "org.mozilla.rust-android-gradle.rust-android", version.ref = "rust" }

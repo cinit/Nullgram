@@ -12,7 +12,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -20,7 +19,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.CornerPathEffect;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -55,8 +53,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
-import com.google.android.exoplayer2.util.Log;
-
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
@@ -64,6 +60,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.EffectsTextView;
 import org.telegram.ui.Components.LayoutHelper;
@@ -72,7 +69,6 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.RadialProgressView;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
-import org.telegram.ui.LaunchActivity;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -83,11 +79,12 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
     public static final int ALERT_TYPE_LOADING = 2;
     public static final int ALERT_TYPE_SPINNER = 3;
 
+    private int customWidth = -1;
     private View customView;
     private View bottomView;
     private View aboveMessageView;
     private int customViewHeight = LayoutHelper.WRAP_CONTENT;
-    private TextView titleTextView;
+    private SpoilersTextView titleTextView;
     private TextView secondTitleTextView;
     private TextView subtitleTextView;
     private TextView messageTextView;
@@ -341,6 +338,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     inLayout = true;
                     int width = MeasureSpec.getSize(widthMeasureSpec);
                     int height = MeasureSpec.getSize(heightMeasureSpec);
+
+                    if (customWidth > 0) {
+                        width = customWidth + backgroundPaddings.left + backgroundPaddings.right;
+                    }
+
                     int maxContentHeight;
                     int availableHeight = maxContentHeight = height - getPaddingTop() - getPaddingBottom();
                     int availableWidth = width - getPaddingLeft() - getPaddingRight();
@@ -596,7 +598,13 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
         containerView.setFitsSystemWindows(Build.VERSION.SDK_INT >= 21);
         if (setContent) {
-            setContentView(containerView);
+            if (customWidth > 0) {
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                lp.gravity = Gravity.CENTER;
+                setContentView(containerView, lp);
+            } else {
+                setContentView(containerView);
+            }
         }
 
         final boolean hasButtons = positiveButtonText != null || negativeButtonText != null || neutralButtonText != null;
@@ -668,6 +676,8 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             containerView.addView(titleContainer, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, topAnimationIsNew ? Gravity.CENTER_HORIZONTAL : 0, 24, 0, 24, 0));
 
             titleTextView = new SpoilersTextView(getContext(), false);
+            NotificationCenter.listenEmojiLoading(titleTextView);
+            titleTextView.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW;
             titleTextView.setText(title);
             titleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
@@ -1544,6 +1554,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             return this;
         }
 
+        public Builder setWidth(int width) {
+            alertDialog.customWidth = width;
+            return this;
+        }
+
         public Builder aboveMessageView(View view) {
             alertDialog.aboveMessageView = view;
             return this;
@@ -1648,6 +1663,16 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
 
         public Builder setMessageTextViewClickable(boolean value) {
             alertDialog.messageTextViewClickable = value;
+            return this;
+        }
+
+        public Builder setCancelable(boolean cancelable) {
+            alertDialog.setCancelable(cancelable);
+            return this;
+        }
+
+        public Builder cancel() {
+            alertDialog.cancel();
             return this;
         }
 

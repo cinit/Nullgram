@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 7.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2020.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.messenger;
@@ -20,11 +31,11 @@ public class BuildVars {
     public static boolean LOGS_ENABLED = true;
     public static boolean USE_CLOUD_STRINGS = true;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
-    public static final int BUILD_VERSION = 4275;
-    public static final String BUILD_VERSION_STRING = "10.6.1";
+    public static final int BUILD_VERSION = 4404;
+    public static final String BUILD_VERSION_STRING = "10.8.1";
     public static final int APP_ID = 19797609;
     public static final String APP_HASH = "e8f1567dbbf38944a1391c4d23c34b60";
-    public static final String APPCENTER_HASH = "e07b49da-11a5-46db-a780-f5cd7b9a1a5a";
+    public static final String APPCENTER_HASH = "PLACEHOLDER";
     public static String SAFETYNET_KEY = "";
 
     public static String SMS_HASH = "O2P2z+/jBpJ";
