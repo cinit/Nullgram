@@ -8,7 +8,7 @@ if (CCACHE)
     set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
 endif ()
 
-set(CMAKE_CXX_FLAGS "-std=c++2a -DANDROID -g")
+set(CMAKE_CXX_FLAGS "-std=c++20 -DANDROID -g")
 set(CMAKE_C_FLAGS "-w -std=c18 -DANDROID -D_LARGEFILE_SOURCE=1 -g")
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
@@ -59,6 +59,8 @@ set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/b
 add_library(libvpx STATIC IMPORTED)
 set_target_properties(libvpx PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a)
 
+add_library(rust STATIC IMPORTED)
+set_target_properties(rust PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/integrity/${ANDROID_ABI}/librust.a.9)
 
 #tgnet
 add_library(tgnet STATIC
@@ -89,8 +91,10 @@ target_compile_definitions(tgnet PUBLIC
         HAVE_PTHREAD)
 target_include_directories(tgnet PUBLIC
         boringssl/include/)
-target_link_libraries(tgnet
+target_link_libraries(tgnet PUBLIC
         crypto)
+target_link_libraries(tgnet INTERFACE
+        rust)
 
 #rlottie
 add_library(rlottie STATIC
@@ -209,7 +213,7 @@ include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
 
 include(${CMAKE_HOME_DIRECTORY}/integrity/CMakeLists.txt)
 
-set(NATIVE_LIB "tmessages.47")
+set(NATIVE_LIB "tmessages.48")
 
 #tmessages
 add_library(${NATIVE_LIB} SHARED
@@ -480,6 +484,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
         intro
         rlottie/inc
         tgcalls/
+        integrity/include/
         webrtc/)
 
 target_link_libraries(${NATIVE_LIB}
@@ -488,6 +493,7 @@ target_link_libraries(${NATIVE_LIB}
         tgcalls
         tgcalls_tp
         tgnet
+        rust
         flac
         rlottie
         sqlite

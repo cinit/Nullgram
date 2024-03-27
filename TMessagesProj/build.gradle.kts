@@ -1,6 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.api.variant.BuildConfigField
+import com.android.build.api.variant.FilterConfiguration
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.text.SimpleDateFormat
@@ -160,11 +161,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(File(projectDir, "proguard-rules.pro"))
-            optimization {
-                keepRules {
-                    ignoreExternalDependencies("com.microsoft.appcenter:appcenter")
-                }
-            }
 
             the<CrashlyticsExtension>().nativeSymbolUploadEnabled = true
             the<CrashlyticsExtension>().mappingFileUploadEnabled = true
@@ -213,7 +209,7 @@ android {
 
     applicationVariants.all {
         outputs.all {
-            val abi = this.filters.find { it.filterType == com.android.build.VariantOutput.ABI }?.identifier
+            val abi = this.filters.find { it.filterType == FilterConfiguration.FilterType.ABI.name }?.identifier
             val output = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
             val outputFileName = "Nullgram-${defaultConfig.versionName}-${abiName[abi]}.apk"
             output?.outputFileName = outputFileName
@@ -225,6 +221,6 @@ android {
 
 kotlin {
     sourceSets.configureEach {
-        kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
+        kotlin.srcDir("${layout.buildDirectory.asFile.get().absolutePath}/generated/ksp/$name/kotlin/")
     }
 }
