@@ -9,9 +9,10 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include "v2sign.h"
+//#include "v2sign.h"
 #include "log.h"
 #include <errno.h>
+#include <time.h>
 
 
 int registerNativeTgNetFunctions(JavaVM *vm, JNIEnv *env);

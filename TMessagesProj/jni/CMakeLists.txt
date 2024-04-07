@@ -59,8 +59,8 @@ set_target_properties(ssl PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/b
 add_library(libvpx STATIC IMPORTED)
 set_target_properties(libvpx PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a)
 
-add_library(rust STATIC IMPORTED)
-set_target_properties(rust PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/integrity/${ANDROID_ABI}/librust.a.9)
+#add_library(rust STATIC IMPORTED)
+#set_target_properties(rust PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/integrity/${ANDROID_ABI}/librust.a.9)
 
 #tgnet
 add_library(tgnet STATIC
@@ -93,8 +93,8 @@ target_include_directories(tgnet PUBLIC
         boringssl/include/)
 target_link_libraries(tgnet PUBLIC
         crypto)
-target_link_libraries(tgnet INTERFACE
-        rust)
+#target_link_libraries(tgnet INTERFACE
+#        rust)
 
 #rlottie
 add_library(rlottie STATIC
@@ -494,7 +494,7 @@ target_link_libraries(${NATIVE_LIB}
         tgcalls
         tgcalls_tp
         tgnet
-        rust
+        norust
         flac
         rlottie
         sqlite
@@ -515,7 +515,8 @@ target_link_libraries(${NATIVE_LIB}
         android
         OpenSLES
         cpufeatures
-        checkSignature)
+#        checkSignature
+)
 
 #if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
 #    target_link_libraries(${NATIVE_LIB}
