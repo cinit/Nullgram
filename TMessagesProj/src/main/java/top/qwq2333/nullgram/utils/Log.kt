@@ -24,6 +24,7 @@ import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import org.telegram.messenger.AndroidUtilities
 import java.io.File
@@ -34,35 +35,44 @@ import java.util.Locale
 
 object Log {
     const val TAG = "Nullgram"
-    private val logFile: File
+    private lateinit var logFile: File
 
     enum class Level {
         DEBUG, INFO, WARN, ERROR
     }
 
     init {
-        val parentFile = AndroidUtilities.getLogsDir()
-        CoroutineScope(Dispatchers.IO).launch {
-            parentFile.listFiles()?.forEach {
-                // delete logs older than 1 day
-                if (it.readAttributes().creationTime().toMillis() < System.currentTimeMillis() - 1 * 24 * 60 * 60 * 1000) {
-                    it.delete()
+        runCatching {
+            val parentFile = AndroidUtilities.getLogsDir()
+            CoroutineScope(Dispatchers.IO).launch {
+                parentFile.listFiles()?.forEach {
+                    // delete logs older than 1 day
+                    if (it.readAttributes().creationTime().toMillis() < System.currentTimeMillis() - 1 * 24 * 60 * 60 * 1000) {
+                        it.delete()
+                    }
                 }
             }
-        }
 
-        logFile = File(parentFile, "log-${SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())}.txt").also {
-            if (!it.exists()) {
-                it.createNewFile()
+            logFile = File(parentFile, "log-${SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())}.txt").also {
+                if (!it.exists()) {
+                    it.createNewFile()
+                }
+                it.setWritable(true)
+                it.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
             }
-            it.setWritable(true)
-            it.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
         }
     }
 
     private fun writeToFile(level: Level, tag: String?, msg: String) {
         CoroutineScope(Dispatchers.IO).launch {
-            logFile.appendText("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())} ${level.name} ${tag ?: ""}: $msg\n", Charset.forName("UTF-8"))
+            runCatching {
+                async {
+                    if (logFile.readAttributes().size() > 1024 * 1024 * 10) { // 10MB
+                        refreshLog()
+                    }
+                }
+                logFile.appendText("${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())} ${level.name} ${tag ?: ""}: $msg\n", Charset.forName("UTF-8"))
+            }
         }
     }
     @JvmStatic
@@ -73,10 +83,12 @@ object Log {
     @JvmStatic
     fun refreshLog() {
         synchronized(logFile) {
-            logFile.let {
-                it.delete()
-                it.createNewFile()
-                it.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
+            runCatching {
+                logFile.let {
+                    it.delete()
+                    it.createNewFile()
+                    it.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
+                }
             }
         }
     }

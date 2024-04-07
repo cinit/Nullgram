@@ -322,7 +322,7 @@ class MessageUtils(num: Int) : BaseController(num) {
 
                     val deleteAction = Runnable {
                         for (list in lists) {
-                            messagesController.deleteMessages(list, null, null, dialogId, true, false)
+                            messagesController.deleteMessages(list, null, null, dialogId, 0, true, 0)
                         }
                     }
                     AndroidUtilities.runOnUIThread {
@@ -604,7 +604,8 @@ class MessageUtils(num: Int) : BaseController(num) {
         resetMessageContent(dialogId, messageObject, translated, null, translating, null)
     }
 
-    fun resetMessageContent(dialogId: Long, messageObject: MessageObject, translated: Boolean, original: Any?, translating: Boolean, translatedLanguage: Pair<String?, String?>?) {
+    fun resetMessageContent(dialogId: Long, messageObject: MessageObject, translated: Boolean, original: Any? = null, translating: Boolean, translatedLanguage: Pair<String?,
+        String?>? = null) {
         val message = messageObject.messageOwner
         val obj = MessageObject(currentAccount, message, true, true)
         obj.originalMessage = original
