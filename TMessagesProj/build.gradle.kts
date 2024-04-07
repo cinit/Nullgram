@@ -2,10 +2,10 @@
 
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.FilterConfiguration
-import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -44,7 +44,7 @@ fun setupPlay(stable: Boolean) {
 }
 
 cargo {
-    module  = "../libs/rust"
+    module = "../libs/rust"
     libname = "rust"
     targets = listOf("arm64", "x86_64")
 
@@ -137,9 +137,9 @@ android {
     var alias: String? = null
     var pwd: String? = null
     if (project.rootProject.file("local.properties").exists()) {
-        keystorePwd = gradleLocalProperties(rootDir).getProperty("RELEASE_STORE_PASSWORD")
-        alias = gradleLocalProperties(rootDir).getProperty("RELEASE_KEY_ALIAS")
-        pwd = gradleLocalProperties(rootDir).getProperty("RELEASE_KEY_PASSWORD")
+        keystorePwd = getLocalProperty(rootDir, "RELEASE_STORE_PASSWORD")
+        alias = getLocalProperty(rootDir, "RELEASE_KEY_ALIAS")
+        pwd = getLocalProperty(rootDir, "RELEASE_KEY_PASSWORD")
     }
 
     signingConfigs {
@@ -224,4 +224,16 @@ kotlin {
     sourceSets.configureEach {
         kotlin.srcDir("${layout.buildDirectory.asFile.get().absolutePath}/generated/ksp/$name/kotlin/")
     }
+}
+
+private fun getLocalProperty(dir: File, propertyName: String): String? {
+    val localProp = File(dir, "local.properties")
+    if (!localProp.exists()) {
+        return null
+    }
+    val localProperties = Properties()
+    localProp.inputStream().use {
+        localProperties.load(it)
+    }
+    return localProperties.getProperty(propertyName, null)
 }
