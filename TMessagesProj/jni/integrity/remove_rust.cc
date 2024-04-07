@@ -22,6 +22,7 @@ static uint8_t common_log_handler(Log::Level level, const char *tag,
         msg_str = msg;
     }
     Log::LogMessage(level, tag_str, msg_str);
+    return 0;
 }
 
 uint8_t logd(const char *tag, const char *msg) {
