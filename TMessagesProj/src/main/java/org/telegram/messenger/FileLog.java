@@ -151,6 +151,9 @@ public class FileLog {
      */
     @Deprecated
     public static void d(final String message) {
+        if (!BuildVars.LOGS_ENABLED) {
+            return;
+        }
         Log.d(message);
     }
 
