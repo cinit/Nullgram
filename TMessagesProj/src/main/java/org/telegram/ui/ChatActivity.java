@@ -32411,7 +32411,11 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 builder.setTitle(formattedUrl);
                 builder.setTitleMultipleLines(true);
                 final MessageObject finalMessageObject = messageObject;
-                builder.setItems(new CharSequence[]{LocaleController.getString("Open", R.string.Open), LocaleController.getString("ShareLink", R.string.ShareLink), LocaleController.getString("Copy", R.string.Copy)}, (dialog, which) -> {
+                builder.setItems(new CharSequence[]{
+                    LocaleController.getString("Open", R.string.Open),
+                    LocaleController.getString("Copy", R.string.Copy),
+                    LocaleController.getString("ShareLink", R.string.ShareLink)
+                }, (dialog, which) -> {
                     if (which == 0) {
                         logSponsoredClicked(finalMessageObject);
                         processExternalUrl(1, urlFinal, url, finalCell, false);
@@ -32426,7 +32430,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                             url1 = url1.substring(4);
                             tel = true;
                         }
-                        if (which == 2) {
+                        if (which == 1) {
                             AndroidUtilities.addToClipboard(url1);
                             createUndoView();
                             if (undoView == null) {
