@@ -65,11 +65,9 @@ jobs:
                     sudo rm -rf /usr/local/share/chromium
                     sudo rm -rf /usr/local/lib/node_modules
                     df -h
-                    
                     sudo apt-get install bison gcc make curl ninja-build -y
-                    echo "y" | sdkmanager --install "ndk;23.2.8568313" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+                    echo "y" | sdkmanager --install "ndk;26.3.11579264" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
                     echo "sdk.dir=${ANDROID_HOME}" >> local.properties
-                    echo "ndk.dir=${ANDROID_HOME}/ndk/23.2.8568313" >> local.properties
             -   name: Debug Build
                 run: |
                     mkdir -p TMessagesProj/config
