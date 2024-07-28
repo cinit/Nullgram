@@ -329,6 +329,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         PHONE_OPTION_TELEGRAM_VIDEO_CALL = 3,
         PHONE_OPTION_HIDE = 4;
 
+    private boolean mOverrideHideId = false;
     private RecyclerListView listView;
     private RecyclerListView searchListView;
     private LinearLayoutManager layoutManager;
@@ -6447,9 +6448,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             icons.add(R.drawable.msg_copy);
             items.add(LocaleController.getString("Copy", R.string.Copy));
             actions.add(PHONE_OPTION_COPY);
-            icons.add(R.drawable.msg_block2);
-            items.add(LocaleController.getString("Hide", R.string.Hide));
-            actions.add(PHONE_OPTION_HIDE);
 
             icons.add(R.drawable.msg_archive_hide);
             items.add(LocaleController.getString("Hide", R.string.Hide));
@@ -9096,9 +9094,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     setAvatarSectionRow = rowCount++;
                 }
                 numberSectionRow = rowCount++;
-                if (!mOverrideHidePhoneNumber) {
-                    numberRow = hidePhone ? -1 : rowCount++;
-                }
+                numberRow = hidePhone ? -1 : rowCount++;
                 if (!mOverrideHideId) {
                     idRow = rowCount++;
                 }
@@ -9184,7 +9180,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 infoStartRow = rowCount;
                 infoHeaderRow = rowCount++;
-                if (!isBot && (hasPhone || !hasInfo) && !mOverrideHidePhoneNumber) {
+                if (!isBot && (hasPhone || !hasInfo)) {
                     phoneRow = hidePhone ? -1 : rowCount++;
                 }
                 if (userInfo != null && !TextUtils.isEmpty(userInfo.about)) {

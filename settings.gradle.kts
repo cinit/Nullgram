@@ -43,10 +43,11 @@ plugins {
 
 develocity {
     buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
-        publishAlwaysIf(System.getenv("GITHUB_ACTIONS") == "true")
-//        publishOnFailure()
+        publishing.onlyIf {
+            System.getenv("GITHUB_ACTIONS") == "true"
+        }
+        termsOfUseAgree.set("yes")
+        termsOfUseUrl.set("https://gradle.com/terms-of-service")
     }
 }
 
