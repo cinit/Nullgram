@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.messenger;
 
 import org.telegram.tgnet.TLObject;
@@ -297,6 +316,22 @@ public class ImageLocation {
         return imageLocation;
     }
 
+    public static ImageLocation getForStickerSet(TLRPC.StickerSet set) {
+        if (set == null) return null;
+        TLRPC.PhotoSize photoSize = FileLoader.getClosestPhotoSizeWithSize(set.thumbs, 90);
+        if (photoSize == null) return null;
+        TLRPC.InputStickerSet inputStickerSet;
+        if (set.access_hash != 0) {
+            inputStickerSet = new TLRPC.TL_inputStickerSetID();
+            inputStickerSet.id = set.id;
+            inputStickerSet.access_hash = set.access_hash;
+        } else {
+            inputStickerSet = new TLRPC.TL_inputStickerSetShortName();
+            inputStickerSet.short_name = set.short_name;
+        }
+        return getForPhoto(photoSize.location, photoSize.size, null, null, null, TYPE_SMALL, photoSize.location.dc_id, inputStickerSet, photoSize.type);
+    }
+
     private static ImageLocation getForPhoto(TLRPC.FileLocation location, int size, TLRPC.Photo photo, TLRPC.Document document, TLRPC.InputPeer photoPeer, int photoPeerType, int dc_id, TLRPC.InputStickerSet stickerSet, String thumbSize) {
         if (location == null || photo == null && photoPeer == null && stickerSet == null && document == null) {
             return null;
@@ -336,7 +371,7 @@ public class ImageLocation {
     }
 
     public static String getStrippedKey(Object parentObject, Object fullObject, Object strippedObject) {
-        if (parentObject instanceof TLRPC.WebPage) {
+        if (parentObject instanceof TLRPC.WebPage || parentObject instanceof MessageObject && ((MessageObject) parentObject).type == MessageObject.TYPE_PAID_MEDIA) {
             if (fullObject instanceof ImageLocation) {
                 ImageLocation imageLocation = (ImageLocation) fullObject;
                 if (imageLocation.document != null) {
@@ -375,7 +410,7 @@ public class ImageLocation {
             return secureDocument.secureFile.dc_id + "_" + secureDocument.secureFile.id;
         } else if (photoSize instanceof TLRPC.TL_photoStrippedSize || photoSize instanceof TLRPC.TL_photoPathSize) {
             if (photoSize.bytes.length > 0) {
-                return getStrippedKey(parentObject, fullObject, photoSize);
+                return getStrippedKey(parentObject, fullObject == null ? this : fullObject, photoSize);
             }
         } else if (location != null) {
             return location.volume_id + "_" + location.local_id;

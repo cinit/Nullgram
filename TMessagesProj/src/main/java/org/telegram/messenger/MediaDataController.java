@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.messenger;
@@ -1143,7 +1154,24 @@ public class MediaDataController extends BaseController {
     }
 
     public TLRPC.TL_messages_stickerSet getStickerSetByName(String name) {
-        return stickerSetsByName.get(name);
+        if (name == null) return null;
+        return stickerSetsByName.get(name.toLowerCase());
+    }
+
+    public void findStickerSetByNameInCache(String name, Utilities.Callback<TLRPC.TL_messages_stickerSet> whenFound) {
+        if (whenFound == null)
+            return;
+        if (name == null) {
+            whenFound.run(null);
+            return;
+        }
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            TLRPC.TL_messages_stickerSet cachedSet = getCachedStickerSetInternal(name.toLowerCase(), 0);
+            AndroidUtilities.runOnUIThread(() -> {
+                putStickerSet(cachedSet, false);
+                whenFound.run(cachedSet);
+            });
+        });
     }
 
     public TLRPC.TL_messages_stickerSet getStickerSetByEmojiOrName(String emoji) {
@@ -1327,6 +1355,42 @@ public class MediaDataController extends BaseController {
             });
         }
         return null;
+    }
+
+    public void putStickerSet(TLRPC.TL_messages_stickerSet set) {
+        putStickerSet(set, true);
+    }
+
+    public void putStickerSet(TLRPC.TL_messages_stickerSet set, boolean notify) {
+        if (set == null || set.set == null) return;
+        stickerSetsById.put(set.set.id, set);
+        if (!TextUtils.isEmpty(set.set.short_name)) {
+            stickerSetsByName.put(set.set.short_name.toLowerCase(), set);
+        }
+        for (int i = 0; i < stickerSets.length; ++i) {
+            ArrayList<TLRPC.TL_messages_stickerSet> sets = stickerSets[i];
+            if (sets != null) {
+                for (int j = 0; j < sets.size(); ++j) {
+                    TLRPC.TL_messages_stickerSet setB = sets.get(j);
+                    if (setB != null && setB.set != null && setB.set.id == set.set.id) {
+                        sets.set(j, set);
+                    }
+                }
+            }
+        }
+        if (groupStickerSets.containsKey(set.set.id)) {
+            groupStickerSets.put(set.set.id, set);
+        }
+        saveStickerSetIntoCache(set);
+        int type = TYPE_IMAGE;
+        if (set.set.masks) {
+            type = TYPE_MASK;
+        } else if (set.set.emojis) {
+            type = TYPE_EMOJIPACKS;
+        }
+        if (notify) {
+            getNotificationCenter().postNotificationName(NotificationCenter.stickersDidLoad, type, true);
+        }
     }
 
     private boolean cleanedupStickerSetCache;
@@ -1962,7 +2026,7 @@ public class MediaDataController extends BaseController {
                     }
                     state.dispose();
                     database.commitTransaction();
-                    if (documents.size() >= maxCount) {
+                    if (!replace && documents.size() >= maxCount) {
                         database.beginTransaction();
                         for (int a = maxCount; a < documents.size(); a++) {
                             database.executeFast("DELETE FROM web_recent_v3 WHERE id = '" + documents.get(a).id + "' AND type = " + cacheType).stepThis().dispose();
@@ -1980,22 +2044,22 @@ public class MediaDataController extends BaseController {
                 if (gif) {
                     loadingRecentGifs = false;
                     recentGifsLoaded = true;
-                    editor.putLong("lastGifLoadTime", System.currentTimeMillis()).commit();
+                    editor.putLong("lastGifLoadTime", System.currentTimeMillis()).apply();
                 } else {
                     loadingRecentStickers[type] = false;
                     recentStickersLoaded[type] = true;
                     if (type == TYPE_IMAGE) {
-                        editor.putLong("lastStickersLoadTime", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTime", System.currentTimeMillis()).apply();
                     } else if (type == TYPE_MASK) {
-                        editor.putLong("lastStickersLoadTimeMask", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeMask", System.currentTimeMillis()).apply();
                     } else if (type == TYPE_GREETINGS) {
-                        editor.putLong("lastStickersLoadTimeGreet", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeGreet", System.currentTimeMillis()).apply();
                     } else if (type == TYPE_EMOJIPACKS) {
-                        editor.putLong("lastStickersLoadTimeEmojiPacks", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeEmojiPacks", System.currentTimeMillis()).apply();
                     } else if (type == TYPE_PREMIUM_STICKERS) {
-                        editor.putLong("lastStickersLoadTimePremiumStickers", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimePremiumStickers", System.currentTimeMillis()).apply();
                     } else {
-                        editor.putLong("lastStickersLoadTimeFavs", System.currentTimeMillis()).commit();
+                        editor.putLong("lastStickersLoadTimeFavs", System.currentTimeMillis()).apply();
                     }
 
                 }
@@ -2037,8 +2101,11 @@ public class MediaDataController extends BaseController {
     }
 
     public void storeTempStickerSet(TLRPC.TL_messages_stickerSet set) {
+        if (set == null || set.set == null) return;
         stickerSetsById.put(set.set.id, set);
-        stickerSetsByName.put(set.set.short_name, set);
+        if (set.set.short_name != null) {
+            stickerSetsByName.put(set.set.short_name.toLowerCase(), set);
+        }
     }
 
     public void addNewStickerSet(TLRPC.TL_messages_stickerSet set) {
@@ -3202,7 +3269,9 @@ public class MediaDataController extends BaseController {
                 stickerSets[type].add(finalCurrentIndex, messages_stickerSet);
                 stickerSetsById.put(stickerSet.id, messages_stickerSet);
                 installedStickerSetsById.put(stickerSet.id, messages_stickerSet);
-                stickerSetsByName.put(stickerSet.short_name, messages_stickerSet);
+                if (stickerSet.short_name != null) {
+                    stickerSetsByName.put(stickerSet.short_name.toLowerCase(), messages_stickerSet);
+                }
                 removingStickerSetsUndos.remove(stickerSet.id);
 
                 loadHash[type] = calcStickersHash(stickerSets[type]);
@@ -3435,6 +3504,7 @@ public class MediaDataController extends BaseController {
     private SparseArray<MessageObject>[] searchServerResultMessagesMap = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private ArrayList<MessageObject> deletedFromResultMessages = new ArrayList<>();
     private String lastSearchQuery;
+    private TLRPC.MessagesFilter lastSearchFilter;
     private int lastReturnedNum;
     private boolean loadingMoreSearchMessages;
     private boolean loadingSearchLocal;
@@ -3552,8 +3622,8 @@ public class MediaDataController extends BaseController {
         return searchServerResultMessagesMap[mergeDialog ? 1 : 0].indexOfKey(messageId) >= 0;
     }
 
-    public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, TLRPC.User user, TLRPC.Chat chat, ReactionsLayoutInBubble.VisibleReaction reaction) {
-        searchMessagesInChat(query, dialogId, mergeDialogId, guid, direction, replyMessageId, false, user, chat, true, reaction);
+    public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, TLRPC.User user, TLRPC.Chat chat, ReactionsLayoutInBubble.VisibleReaction reaction, TLRPC.MessagesFilter filter) {
+        searchMessagesInChat(query, dialogId, mergeDialogId, guid, direction, replyMessageId, false, user, chat, true, reaction, filter);
     }
 
     public void jumpToSearchedMessage(int guid, int index) {
@@ -3594,7 +3664,7 @@ public class MediaDataController extends BaseController {
         int temp = lastReturnedNum;
         lastReturnedNum = searchResultMessages.size();
         loadingMoreSearchMessages = true;
-        searchMessagesInChat(null, lastDialogId, lastMergeDialogId, lastGuid, 1, lastReplyMessageId, false, lastSearchUser, lastSearchChat, false, lastReaction);
+        searchMessagesInChat(null, lastDialogId, lastMergeDialogId, lastGuid, 1, lastReplyMessageId, false, lastSearchUser, lastSearchChat, false, lastReaction, lastSearchFilter);
         lastReturnedNum = temp;
     }
 
@@ -3602,7 +3672,8 @@ public class MediaDataController extends BaseController {
         return reqId != 0;
     }
 
-    public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, boolean internal, TLRPC.User user, TLRPC.Chat chat, boolean jumpToMessage, ReactionsLayoutInBubble.VisibleReaction reaction) {
+    public void searchMessagesInChat(String query, long dialogId, long mergeDialogId, int guid, int direction, long replyMessageId, boolean internal, TLRPC.User user, TLRPC.Chat chat,
+        boolean jumpToMessage, ReactionsLayoutInBubble.VisibleReaction reaction, TLRPC.MessagesFilter filter) {
         int max_id = 0;
         long queryWithDialog = dialogId;
         boolean firstQuery = !internal;
@@ -3707,7 +3778,11 @@ public class MediaDataController extends BaseController {
                     req.saved_reaction.add(reaction.toTLReaction());
                     req.flags |= 8;
                 }
-                req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+                if (filter != null) {
+                    req.filter = filter;
+                } else {
+                    req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+                }
                 mergeReqId = getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                     if (lastMergeDialogId == mergeDialogId) {
                         mergeReqId = 0;
@@ -3715,11 +3790,11 @@ public class MediaDataController extends BaseController {
                             TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
                             messagesSearchEndReached[1] = res.messages.isEmpty();
                             messagesSearchCount[1] = res instanceof TLRPC.TL_messages_messagesSlice ? res.count : res.messages.size();
-                            searchMessagesInChat(req.q, dialogId, mergeDialogId, guid, direction, replyMessageId, true, user, chat, jumpToMessage, reaction);
+                            searchMessagesInChat(req.q, dialogId, mergeDialogId, guid, direction, replyMessageId, true, user, chat, jumpToMessage, reaction, filter);
                         } else {
                             messagesSearchEndReached[1] = true;
                             messagesSearchCount[1] = 0;
-                            searchMessagesInChat(req.q, dialogId, mergeDialogId, guid, direction, replyMessageId, true, user, chat, jumpToMessage, reaction);
+                            searchMessagesInChat(req.q, dialogId, mergeDialogId, guid, direction, replyMessageId, true, user, chat, jumpToMessage, reaction, filter);
                         }
                     }
                 }), ConnectionsManager.RequestFlagFailOnServerErrors);
@@ -3736,6 +3811,7 @@ public class MediaDataController extends BaseController {
             loadingMoreSearchMessages = false;
             return;
         }
+        lastSearchFilter = filter;
         lastGuid = guid;
         lastDialogId = dialogId;
         lastSearchUser = user;
@@ -3792,7 +3868,11 @@ public class MediaDataController extends BaseController {
             req.saved_reaction.add(reaction.toTLReaction());
             req.flags |= 8;
         }
-        req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+        if (filter != null) {
+            req.filter = filter;
+        } else {
+            req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+        }
         lastSearchQuery = query;
         long queryWithDialogFinal = queryWithDialog;
         String finalQuery = query;
@@ -3864,7 +3944,7 @@ public class MediaDataController extends BaseController {
                                 }
                             }
                             if (queryWithDialogFinal == dialogId && messagesSearchEndReached[0] && mergeDialogId != 0 && !messagesSearchEndReached[1]) {
-                                searchMessagesInChat(lastSearchQuery, dialogId, mergeDialogId, guid, 0, replyMessageId, true, user, chat, jumpToMessage, lastReaction);
+                                searchMessagesInChat(lastSearchQuery, dialogId, mergeDialogId, guid, 0, replyMessageId, true, user, chat, jumpToMessage, lastReaction, lastSearchFilter);
                             }
                         };
                         if (isSaved) {
@@ -4597,7 +4677,7 @@ public class MediaDataController extends BaseController {
                     }
 
                     if (!usersToLoad.isEmpty()) {
-                        getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), res.users);
+                        getMessagesStorage().getUsersInternal(usersToLoad, res.users);
                     }
                     if (!chatsToLoad.isEmpty()) {
                         getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), res.chats);
@@ -4970,7 +5050,7 @@ public class MediaDataController extends BaseController {
                     }
                     cursor.dispose();
                     if (!usersToLoad.isEmpty()) {
-                        getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                        getMessagesStorage().getUsersInternal(usersToLoad, users);
                     }
 
                     if (!chatsToLoad.isEmpty()) {
@@ -5747,7 +5827,7 @@ public class MediaDataController extends BaseController {
             }
             if (!results.isEmpty()) {
                 if (!usersToLoad.isEmpty()) {
-                    getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                    getMessagesStorage().getUsersInternal(usersToLoad, users);
                 }
                 if (!chatsToLoad.isEmpty()) {
                     getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
@@ -5906,7 +5986,7 @@ public class MediaDataController extends BaseController {
                                     object.applyTimestampsHighlightForReplyMsg();
                                     object.messageOwner.reply_to = new TLRPC.TL_messageReplyHeader();
                                     object.messageOwner.reply_to.flags |= 16;
-                                    object.messageOwner.reply_to.reply_to_msg_id = messageObject.getId();
+                                    object.messageOwner.reply_to.reply_to_msg_id = messageObject.getRealId();
                                 }
                             }
                         }
@@ -5940,14 +6020,14 @@ public class MediaDataController extends BaseController {
                 if (messageObject == null) {
                     continue;
                 }
-                if (!messageObject.isReplyToStory() && messageObject.isReply() && messageObject.getId() > 0) {
+                if (!messageObject.isReplyToStory() && messageObject.isReply() && messageObject.getRealId() > 0) {
                     if (messageObject.messageOwner.reply_to.reply_to_peer_id != null) {
                         continue;
                     }
                     int reply_to_id = messageObject.messageOwner.reply_to.reply_to_msg_id;
                     for (int j = 0; j < messages.size(); ++j) {
                         if (a == j) continue;
-                        if (messages.get(j) != null && messages.get(j).getId() == reply_to_id) {
+                        if (messages.get(j) != null && messages.get(j).getRealId() == reply_to_id) {
                             messageObject.replyMessageObject = messages.get(j);
                             messageObject.applyTimestampsHighlightForReplyMsg();
                             if (messageObject.messageOwner.action instanceof TLRPC.TL_messageActionPinMessage) {
@@ -5983,7 +6063,7 @@ public class MediaDataController extends BaseController {
                         long storyDialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.media.peer);
                         messageObject.messageOwner.media.storyItem = StoriesStorage.checkExpiredStateLocal(currentAccount, storyDialogId, messageObject.messageOwner.media.storyItem);
                     }
-                } else if (messageObject.getId() > 0 && messageObject.isReplyToStory()) {
+                } else if (messageObject.getRealId() > 0 && messageObject.isReplyToStory()) {
                     if (messageObject.messageOwner.replyStory == null) {
                         long storyDialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.peer);
                         if (messagesWithUnknownStories == null) {
@@ -5999,7 +6079,7 @@ public class MediaDataController extends BaseController {
                         long storyDialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.peer);
                         messageObject.messageOwner.replyStory = StoriesStorage.checkExpiredStateLocal(currentAccount, storyDialogId, messageObject.messageOwner.replyStory);
                     }
-                } else if (messageObject.getId() > 0 && messageObject.isReply()) {
+                } else if (messageObject.getRealId() > 0 && messageObject.isReply()) {
                     int messageId = messageObject.messageOwner.reply_to.reply_to_msg_id;
                     if (messageId == threadMessageId) {
                         continue;
@@ -6157,7 +6237,7 @@ public class MediaDataController extends BaseController {
                     }
 
                     if (!usersToLoad.isEmpty()) {
-                        getMessagesStorage().getUsersInternal(TextUtils.join(",", usersToLoad), users);
+                        getMessagesStorage().getUsersInternal(usersToLoad, users);
                     }
                     if (!chatsToLoad.isEmpty()) {
                         getMessagesStorage().getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
@@ -6956,6 +7036,7 @@ public class MediaDataController extends BaseController {
                             TLRPC.TL_messageEntityBlockquote entity = new TLRPC.TL_messageEntityBlockquote();
                             entity.offset = spannable.getSpanStart(span);
                             entity.length = Math.min(spannable.getSpanEnd(span), message[0].length()) - entity.offset;
+                            entity.collapsed = span.isCollapsing;
                             entities.add(entity);
                         } catch (Exception e) {
                             FileLog.e(e);
@@ -6965,8 +7046,9 @@ public class MediaDataController extends BaseController {
             }
 
             if (spannable instanceof Spannable) {
-                AndroidUtilities.addLinks((Spannable) spannable, Linkify.WEB_URLS, false, false);
-                URLSpan[] spansUrl = spannable.getSpans(0, message[0].length(), URLSpan.class);
+                Spannable s = (Spannable) spannable;
+                AndroidUtilities.addLinksSafe(s, Linkify.WEB_URLS, false, false);
+                URLSpan[] spansUrl = s.getSpans(0, message[0].length(), URLSpan.class);
                 if (spansUrl != null && spansUrl.length > 0) {
                     if (entities == null) {
                         entities = new ArrayList<>();
@@ -6980,8 +7062,28 @@ public class MediaDataController extends BaseController {
                         entity.length = Math.min(spannable.getSpanEnd(spansUrl[b]), message[0].length()) - entity.offset;
                         entity.url = spansUrl[b].getURL();
                         entities.add(entity);
+                        s.removeSpan(spansUrl[b]);
                     }
                 }
+//
+//                AndroidUtilities.doSafe(() -> Linkify.addLinks(s, Linkify.PHONE_NUMBERS));
+//                spansUrl = s.getSpans(0, message[0].length(), URLSpan.class);
+//                if (spansUrl != null && spansUrl.length > 0) {
+//                    if (entities == null) {
+//                        entities = new ArrayList<>();
+//                    }
+//                    for (int b = 0; b < spansUrl.length; b++) {
+//                        if (spansUrl[b] instanceof URLSpanReplacement || spansUrl[b] instanceof URLSpanUserMention) {
+//                            continue;
+//                        }
+//                        TLRPC.TL_messageEntityTextUrl entity = new TLRPC.TL_messageEntityTextUrl();
+//                        entity.offset = spannable.getSpanStart(spansUrl[b]);
+//                        entity.length = Math.min(spannable.getSpanEnd(spansUrl[b]), message[0].length()) - entity.offset;
+//                        entity.url = spansUrl[b].getURL();
+//                        entities.add(entity);
+//                        s.removeSpan(spansUrl[b]);
+//                    }
+//                }
             }
         }
 
@@ -7040,6 +7142,17 @@ public class MediaDataController extends BaseController {
         return true;
     }
 
+    public static boolean stringsEqual(CharSequence a, CharSequence b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        if (!TextUtils.equals(a, b)) return false;
+        CharSequence[] A = new CharSequence[] { new SpannableStringBuilder(a) };
+        CharSequence[] B = new CharSequence[] { new SpannableStringBuilder(b) };
+        ArrayList<TLRPC.MessageEntity> ae = getInstance(UserConfig.selectedAccount).getEntities(A, true);
+        ArrayList<TLRPC.MessageEntity> be = getInstance(UserConfig.selectedAccount).getEntities(B, true);
+        return entitiesEqual(ae, be);
+    }
+
     public static boolean entitiesEqual(ArrayList<TLRPC.MessageEntity> entities1, ArrayList<TLRPC.MessageEntity> entities2) {
         if (entities1.size() != entities2.size()) {
             return false;
@@ -7073,8 +7186,9 @@ public class MediaDataController extends BaseController {
             if (allowEntity) {
                 // check if it is inside a code block: do not convert __ ** || to styles inside code
                 for (int i = 0; i < entities.size(); ++i) {
-                    if (entities.get(i) instanceof TLRPC.TL_messageEntityPre) {
-                        if (AndroidUtilities.intersect1d(m.start() - offset, m.end() - offset, entities.get(i).offset, entities.get(i).offset + entities.get(i).length)) {
+                    final TLRPC.MessageEntity entity = entities.get(i);
+                    if (entity instanceof TLRPC.TL_messageEntityPre || entity instanceof TLRPC.TL_messageEntityCode) {
+                        if (AndroidUtilities.intersect1d(m.start() - offset, m.end() - offset, entity.offset, entity.offset + entity.length)) {
                             allowEntity = false;
                             break;
                         }
@@ -7179,11 +7293,11 @@ public class MediaDataController extends BaseController {
         return threads.get(threadId);
     }
 
-    public void saveDraft(long dialogId, int threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, boolean noWebpage) {
-        saveDraft(dialogId, threadId, message, entities, replyToMessage, null, noWebpage, false);
+    public void saveDraft(long dialogId, int threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, boolean noWebpage, long effectId) {
+        saveDraft(dialogId, threadId, message, entities, replyToMessage, null, effectId, noWebpage, false);
     }
 
-    public void saveDraft(long dialogId, long threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, ChatActivity.ReplyQuote quote, boolean noWebpage, boolean clean) {
+    public void saveDraft(long dialogId, long threadId, CharSequence message, ArrayList<TLRPC.MessageEntity> entities, TLRPC.Message replyToMessage, ChatActivity.ReplyQuote quote, long effectId, boolean noWebpage, boolean clean) {
         TLRPC.DraftMessage draftMessage;
         if (getMessagesController().isForum(dialogId) && threadId == 0) {
             replyToMessage = null;
@@ -7196,6 +7310,10 @@ public class MediaDataController extends BaseController {
         draftMessage.date = (int) (System.currentTimeMillis() / 1000);
         draftMessage.message = message == null ? "" : message.toString();
         draftMessage.no_webpage = noWebpage;
+        if (effectId != 0) {
+            draftMessage.flags |= 128;
+            draftMessage.effect = effectId;
+        }
         if (replyToMessage != null) {
             draftMessage.reply_to = new TLRPC.TL_inputReplyToMessage();
             draftMessage.flags |= 16;
@@ -7238,12 +7356,14 @@ public class MediaDataController extends BaseController {
                 sameDraft = (
                     currentDraft.message.equals(draftMessage.message) &&
                     replyToEquals(currentDraft.reply_to, draftMessage.reply_to) &&
-                    currentDraft.no_webpage == draftMessage.no_webpage
+                    currentDraft.no_webpage == draftMessage.no_webpage &&
+                    currentDraft.effect == draftMessage.effect
                 );
             } else {
                 sameDraft = (
                     TextUtils.isEmpty(draftMessage.message) &&
-                    (draftMessage.reply_to == null || draftMessage.reply_to.reply_to_msg_id == 0)
+                    (draftMessage.reply_to == null || draftMessage.reply_to.reply_to_msg_id == 0) &&
+                    draftMessage.effect == 0
                 );
             }
             if (sameDraft) {
@@ -7269,6 +7389,10 @@ public class MediaDataController extends BaseController {
                 if ((draftMessage.flags & 8) != 0) {
                     req.entities = draftMessage.entities;
                     req.flags |= 8;
+                }
+                if ((draftMessage.flags & 128) != 0) {
+                    req.effect = draftMessage.effect;
+                    req.flags |= 128;
                 }
                 getConnectionsManager().sendRequest(req, (response, error) -> {
 
@@ -7584,7 +7708,7 @@ public class MediaDataController extends BaseController {
                 draftMessage.reply_to.reply_to_msg_id = 0;
             }
             draftMessage.flags &= ~1;
-            saveDraft(dialogId, threadId, draftMessage.message, draftMessage.entities, null, null, draftMessage.no_webpage, true);
+            saveDraft(dialogId, threadId, draftMessage.message, draftMessage.entities, null, null, 0, draftMessage.no_webpage, true);
         }
     }
 
@@ -7978,6 +8102,7 @@ public class MediaDataController extends BaseController {
         checkPremiumPromo();
         checkPremiumGiftStickers();
         checkGenericAnimations();
+        getMessagesController().getAvailableEffects();
     }
 
     public void moveStickerSetToTop(long setId, boolean emojis, boolean masks) {

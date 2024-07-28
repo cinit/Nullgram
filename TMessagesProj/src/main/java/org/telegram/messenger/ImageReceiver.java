@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.messenger;
@@ -311,7 +322,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean isAspectFit;
     private boolean forcePreview;
     private boolean forceCrossfade;
+    private boolean useRoundRadius = true;
     private final int[] roundRadius = new int[4];
+    private int[] emptyRoundRadius;
     private boolean isRoundRect = true;
     private Object mark;
 
@@ -1009,18 +1022,19 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         if (drawable == null) {
             return;
         }
+        int[] r = getRoundRadius(true);
         if (drawable instanceof ClipRoundedDrawable) {
-            ((ClipRoundedDrawable) drawable).setRadii(roundRadius[0], roundRadius[1], roundRadius[2], roundRadius[3]);
+            ((ClipRoundedDrawable) drawable).setRadii(r[0], r[1], r[2], r[3]);
         } else if ((hasRoundRadius() || gradientShader != null) && (drawable instanceof BitmapDrawable || drawable instanceof AvatarDrawable)) {
             if (drawable instanceof AvatarDrawable) {
-                ((AvatarDrawable) drawable).setRoundRadius(roundRadius[0]);
+                ((AvatarDrawable) drawable).setRoundRadius(r[0]);
             } else {
                 BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
                 if (bitmapDrawable instanceof RLottieDrawable) {
 
                 } else if (bitmapDrawable instanceof AnimatedFileDrawable) {
                     AnimatedFileDrawable animatedFileDrawable = (AnimatedFileDrawable) drawable;
-                    animatedFileDrawable.setRoundRadius(roundRadius);
+                    animatedFileDrawable.setRoundRadius(r);
                 } else if (bitmapDrawable.getBitmap() != null && !bitmapDrawable.getBitmap().isRecycled()) {
                     setDrawableShader(drawable, new BitmapShader(bitmapDrawable.getBitmap(), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
                 }
@@ -1209,6 +1223,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             colorFilter = this.colorFilter;
             roundRadius = this.roundRadius;
         }
+        if (!useRoundRadius) roundRadius = emptyRoundRadius;
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
             if (drawable instanceof RLottieDrawable) {
@@ -1326,7 +1341,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                         roundPaint.setAlpha(alpha);
                         roundRect.set(drawRegion);
 
-                        if (isRoundRect) {
+                        if (isRoundRect && useRoundRadius) {
                             try {
                                 if (canvas != null) {
                                     if (roundRadius[0] == 0) {
@@ -1436,7 +1451,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
                         roundPaint.setAlpha(alpha);
 
-                        if (isRoundRect) {
+                        if (isRoundRect && useRoundRadius) {
                             try {
                                 if (canvas != null) {
                                     if (roundRadius[0] == 0) {
@@ -1649,6 +1664,9 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 SvgHelper.SvgDrawable svgDrawable = null;
                 if (drawable instanceof SvgHelper.SvgDrawable) {
                     svgDrawable = (SvgHelper.SvgDrawable) drawable;
+                    svgDrawable.setParent(this);
+                } else if (drawable instanceof ClipRoundedDrawable && ((ClipRoundedDrawable) drawable).getDrawable() instanceof SvgHelper.SvgDrawable) {
+                    svgDrawable = (SvgHelper.SvgDrawable) ((ClipRoundedDrawable) drawable).getDrawable();
                     svgDrawable.setParent(this);
                 }
                 if (colorFilter != null && drawable != null) {
@@ -1874,6 +1892,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
                 animationNotReady = animation != null && !animation.hasBitmap() || lottieDrawable != null && !lottieDrawable.hasBitmap();
                 colorFilter = this.colorFilter;
             }
+            if (!useRoundRadius) roundRadius = emptyRoundRadius;
 
             if (animation != null) {
                 animation.setRoundRadius(roundRadius);
@@ -2483,6 +2502,28 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         }
     }
 
+    public void setRoundRadiusEnabled(boolean enabled) {
+        if (useRoundRadius != enabled) {
+            useRoundRadius = enabled;
+            if (!useRoundRadius && emptyRoundRadius == null) {
+                emptyRoundRadius = new int[4];
+                emptyRoundRadius[0] = emptyRoundRadius[1] = emptyRoundRadius[2] = emptyRoundRadius[3] = 0;
+            }
+            if (currentImageDrawable != null && imageShader == null) {
+                updateDrawableRadius(currentImageDrawable);
+            }
+            if (currentMediaDrawable != null && mediaShader == null) {
+                updateDrawableRadius(currentMediaDrawable);
+            }
+            if (currentThumbDrawable != null) {
+                updateDrawableRadius(currentThumbDrawable);
+            }
+            if (staticThumbDrawable != null) {
+                updateDrawableRadius(staticThumbDrawable);
+            }
+        }
+    }
+
     public void setMark(Object mark) {
         this.mark = mark;
     }
@@ -2497,6 +2538,10 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
 
     public int[] getRoundRadius() {
         return roundRadius;
+    }
+
+    public int[] getRoundRadius(boolean includingEmpty) {
+        return !useRoundRadius && includingEmpty ? emptyRoundRadius : roundRadius;
     }
 
     public Object getParentObject() {
@@ -2618,8 +2663,23 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             animation.stop();
         } else {
             RLottieDrawable rLottieDrawable = getLottieAnimation();
-            if (rLottieDrawable != null && !rLottieDrawable.isRunning()) {
+            if (rLottieDrawable != null) {
                 rLottieDrawable.stop();
+            }
+        }
+    }
+
+    private boolean emojiPaused;
+    public void setEmojiPaused(boolean paused) {
+        if (emojiPaused == paused) return;
+        emojiPaused = paused;
+        RLottieDrawable rLottieDrawable = getLottieAnimation();
+        allowStartLottieAnimation = !paused;
+        if (rLottieDrawable != null) {
+            if (paused) {
+                rLottieDrawable.stop();
+            } else if (!rLottieDrawable.isRunning()) {
+                rLottieDrawable.start();
             }
         }
     }

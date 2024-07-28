@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -37,7 +56,7 @@ public class ReplyMessageLine {
     public final float[] radii = new float[8];
     private final Path lineClipPath = new Path();
     private final Path backgroundPath = new Path();
-    private final Paint backgroundPaint = new Paint();
+    public final Paint backgroundPaint = new Paint();
     private LoadingDrawable backgroundLoadingDrawable;
 
     public boolean hasColor2, hasColor3;
@@ -46,6 +65,7 @@ public class ReplyMessageLine {
     private Path color2Path = new Path();
     private Path color3Path = new Path();
     private int switchedCount = 0;
+    private float emojiAlpha = 1f;
 
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emoji;
 
@@ -177,23 +197,17 @@ public class ReplyMessageLine {
             messageObject.messageOwner != null && (
                 (messageObject.isFromUser() || DialogObject.isEncryptedDialog(messageObject.getDialogId())) && currentUser != null ||
                 messageObject.isFromChannel() && currentChat != null ||
-                messageObject.isSponsored() && messageObject.sponsoredChatInvite instanceof TLRPC.TL_chatInvite ||
-                messageObject.isSponsored() && messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null ||
-                messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null
+                messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null ||
+                messageObject.isSponsored() && messageObject.sponsoredColor != null && messageObject.sponsoredColor.color != -1
             )
         )) {
             int colorId = 5;
             if (messageObject.overrideLinkColor >= 0) {
                 colorId = messageObject.overrideLinkColor;
-            } else if (messageObject.isSponsored() && messageObject.sponsoredChatInvite instanceof TLRPC.TL_chatInvite) {
-                colorId = messageObject.sponsoredChatInvite.color;
-                if (type == TYPE_LINK && messageObject.sponsoredChatInvite.chat != null) {
-                    emojiDocumentId = ChatObject.getEmojiId(messageObject.sponsoredChatInvite.chat);
-                }
-            } else if (messageObject.isSponsored() && messageObject.sponsoredChatInvite != null && messageObject.sponsoredChatInvite.chat != null) {
-                colorId = ChatObject.getColorId(messageObject.sponsoredChatInvite.chat);
+            } else if (messageObject.isSponsored() && messageObject.sponsoredColor != null && messageObject.sponsoredColor.color != -1) {
+                colorId = messageObject.sponsoredColor.color;
                 if (type == TYPE_LINK) {
-                    emojiDocumentId = ChatObject.getEmojiId(messageObject.sponsoredChatInvite.chat);
+                    emojiDocumentId = messageObject.sponsoredColor.background_emoji_id;
                 }
             } else if (messageObject.messageOwner != null && messageObject.messageOwner.fwd_from != null && messageObject.messageOwner.fwd_from.from_id != null) {
                 long dialogId = DialogObject.getPeerDialogId(messageObject.messageOwner.fwd_from.from_id);
@@ -327,6 +341,31 @@ public class ReplyMessageLine {
         }
         return nameColorAnimated.set(nameColor);
     }
+
+    public int setFactCheck(Theme.ResourcesProvider resourcesProvider) {
+        nameColor = Theme.getColor(Theme.key_text_RedBold, resourcesProvider);
+        color1 = Theme.getColor(Theme.key_text_RedBold, resourcesProvider);
+        hasColor2 = false;
+        hasColor3 = false;
+        backgroundColor = Theme.multAlpha(Theme.getColor(Theme.key_text_RedBold, resourcesProvider), 0.10f);
+        if (emojiDocumentId != 0 && emoji == null) {
+            emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(parentView, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
+            if (parentView instanceof ChatMessageCell ? ((ChatMessageCell) parentView).isCellAttachedToWindow() : parentView.isAttachedToWindow()) {
+                emoji.attach();
+            }
+        }
+        if (emoji != null) {
+            if (emoji.set(emojiDocumentId, true)) {
+                emojiLoaded = false;
+            }
+        }
+        return nameColorAnimated.set(nameColor);
+    }
+
+    public void setEmojiAlpha(float emojiAlpha) {
+        this.emojiAlpha = emojiAlpha;
+    }
+
 
     public void resetAnimation() {
         color1Animated.set(color1, true);
@@ -507,7 +546,7 @@ public class ReplyMessageLine {
         if (emoji != null) {
             final float loadedScale = emojiLoadedT.set(isEmojiLoaded());
 
-            if (loadedScale > 0) {
+            if (loadedScale > 0 && emojiAlpha > 0) {
                 if (iconCoords == null) {
                     iconCoords = new IconCoords[]{
                         new IconCoords(4, -6.33f, 1f, 1f),
@@ -541,7 +580,7 @@ public class ReplyMessageLine {
                     if (c.q && !hasQuote) {
                         continue;
                     }
-                    emoji.setAlpha((int) (0xFF * .30f * c.a));
+                    emoji.setAlpha((int) (0xFF * .30f * c.a * emojiAlpha));
                     final float cx = x0 - dp(c.x);
                     final float cy = y0 + dp(c.y);
                     final float sz = dp(10) * c.s * loadedScale;

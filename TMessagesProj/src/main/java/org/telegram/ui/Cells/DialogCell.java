@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 1.3.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.ui.Cells;
@@ -113,6 +124,7 @@ import org.telegram.ui.Components.VectorAvatarThumbDrawable;
 import org.telegram.ui.Components.spoilers.SpoilerEffect;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.RightSlidingDialogContainer;
+import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoriesUtilities;
 import org.telegram.ui.Stories.StoryViewer;
@@ -938,7 +950,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if (UserObject.isDeleted(currentUser)) {
                     title = LocaleController.getString("HiddenName", R.string.HiddenName);
                 } else {
-                    title = ContactsController.formatName(currentUser.first_name, currentUser.last_name).replace('\n', ' ');
+                    title = AndroidUtilities.removeDiacritics(ContactsController.formatName(currentUser.first_name, currentUser.last_name).replace('\n', ' '));
                 }
             } else {
                 continue;
@@ -950,7 +962,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             int boldEnd = boldStart + title.length();
             builder.append(title);
             if (dialog.unread_count > 0) {
-                builder.setSpan(new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)), boldStart, boldEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new TypefaceSpan(AndroidUtilities.bold(), 0, Theme.getColor(Theme.key_chats_nameArchived, resourcesProvider)), boldStart, boldEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             if (builder.length() > 150) {
                 break;
@@ -1291,7 +1303,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 draftVoice = false;
                 needEmoji = true;
                 updateMessageThumbs();
-                messageNameString = getMessageNameString();
+                messageNameString = AndroidUtilities.removeDiacritics(getMessageNameString());
                 messageString = formatTopicsNames();
                 String restrictionReason = message != null ? MessagesController.getRestrictionReason(message.messageOwner.restriction_reason) : null;
                 buttonString = message != null ? getMessageStringFormatted(messageFormatType, restrictionReason, messageNameString, true) : "";
@@ -1414,7 +1426,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             TLRPC.MessagePeerReaction lastReaction = message.messageOwner.reactions.recent_reactions.get(0);
                             if (lastReaction.unread && lastReaction.peer_id.user_id != 0 &&lastReaction.peer_id.user_id != UserConfig.getInstance(currentAccount).clientUserId) {
                                 lastMessageIsReaction = true;
-                                ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(lastReaction.reaction);
+                                ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(lastReaction.reaction);
                                 currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                                 if (visibleReaction.emojicon != null) {
                                     messageString = LocaleController.formatString("ReactionInDialog", R.string.ReactionInDialog, visibleReaction.emojicon);
@@ -1487,10 +1499,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             updateMessageThumbs();
                             String triedMessageName = null;
                             if (!isSavedDialog && user != null && user.self && !message.isOutOwner()) {
-                                triedMessageName = getMessageNameString();
+                                triedMessageName = AndroidUtilities.removeDiacritics(getMessageNameString());
                             }
                             if (isSavedDialog && user != null && !user.self && message != null && message.isOutOwner() || triedMessageName != null || chat != null && chat.id > 0 && fromChat == null && (!ChatObject.isChannel(chat) || ChatObject.isMegagroup(chat)) && !ForumUtilities.isTopicCreateMessage(message)) {
-                                messageNameString = triedMessageName != null ? triedMessageName : getMessageNameString();
+                                messageNameString =  AndroidUtilities.removeDiacritics(triedMessageName != null ? triedMessageName : getMessageNameString());
                                 if (chat != null && chat.forum && !isTopic && !useFromUserAsAvatar) {
                                     CharSequence topicName = MessagesController.getInstance(currentAccount).getTopicsController().getTopicIconName(chat, message, currentMessagePaint);
                                     if (!TextUtils.isEmpty(topicName)) {
@@ -1592,7 +1604,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                         messageString = new SpannableStringBuilder(emoji).append(text);
                                     } else {
                                         SpannableStringBuilder msgBuilder = new SpannableStringBuilder(message.caption);
-                                        if (Config.displaySpoilerMsgDirectly && message != null && message.messageOwner != null) {
+                                        if (message != null && message.messageOwner != null) {
                                             if (message != null) {
                                                 message.spoilLoginCode();
                                             }
@@ -1601,6 +1613,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                         }
                                         messageString = new SpannableStringBuilder(emoji).append(msgBuilder);
                                     }
+                                } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPaidMedia) {
+                                    TLRPC.TL_messageMediaPaidMedia paidMedia = (TLRPC.TL_messageMediaPaidMedia) message.messageOwner.media;
+                                    final int count = paidMedia.extended_media.size();
+                                    if (hasVideoThumb) {
+                                        messageString = count > 1 ? LocaleController.formatPluralString("Media", count) : LocaleController.getString(R.string.AttachVideo);
+                                    } else {
+                                        messageString = count > 1 ? LocaleController.formatPluralString("Photos", count) : LocaleController.getString(R.string.AttachPhoto);
+                                    }
+                                    messageString = StarsIntroActivity.replaceStars(LocaleController.formatString(R.string.AttachPaidMedia, messageString));
+                                    currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
                                 } else if (thumbsCount > 1) {
                                     if (hasVideoThumb) {
                                         messageString = LocaleController.formatPluralString("Media", groupMessages == null ? 0 : groupMessages.size());
@@ -1621,7 +1643,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                         messageString = LocaleController.getString("BoostingGiveawayResults", R.string.BoostingGiveawayResults);
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                                         TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
-                                        messageString = "\uD83D\uDCCA " + mediaPoll.poll.question;
+                                        if (mediaPoll.poll.question != null && mediaPoll.poll.question.entities != null) {
+                                            SpannableStringBuilder questionText = new SpannableStringBuilder(mediaPoll.poll.question.text);
+                                            MediaDataController.addTextStyleRuns(mediaPoll.poll.question.entities, mediaPoll.poll.question.text, questionText);
+                                            MediaDataController.addAnimatedEmojiSpans(mediaPoll.poll.question.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                                            messageString = new SpannableStringBuilder("\uD83D\uDCCA ").append(questionText);
+                                        } else {
+                                            messageString = "\uD83D\uDCCA " + mediaPoll.poll.question.text;
+                                        }
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                                         messageString = "\uD83C\uDFAE " + message.messageOwner.media.game.title;
                                     } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaInvoice) {
@@ -1654,11 +1683,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                             messageString = AndroidUtilities.ellipsizeCenterEnd(messageString, message.highlightedWords.get(0), w, currentMessagePaint, 130);
                                         } else {
                                             SpannableStringBuilder stringBuilder = new SpannableStringBuilder(msgText);
-                                            if (Config.displaySpoilerMsgDirectly && message != null) {
+                                            if (message != null) {
                                                 message.spoilLoginCode();
                                             }
                                             MediaDataController.addTextStyleRuns(message, stringBuilder, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
-                                            if (Config.displaySpoilerMsgDirectly && message != null && message.messageOwner != null) {
+                                            if (message != null && message.messageOwner != null) {
                                                 MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, stringBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
                                             }
                                             messageString = stringBuilder;
@@ -1851,9 +1880,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             topicIconInName = new Drawable[1];
                         }
                         topicIconInName[0] = null;
-                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, Theme.dialogs_namePaint[paintIndex], topicIconInName, false) : forumTopic.title;
+                        nameString = showTopicIconInName ? ForumUtilities.getTopicSpannedName(forumTopic, Theme.dialogs_namePaint[paintIndex], topicIconInName, false) : AndroidUtilities.removeDiacritics(forumTopic.title);
                     } else {
-                        nameString = chat.title;
+                        nameString = AndroidUtilities.removeDiacritics(chat.title);
                     }
                 } else if (user != null) {
                     if (UserObject.isReplyUser(user)) {
@@ -1872,7 +1901,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             nameString = LocaleController.getString("SavedMessages", R.string.SavedMessages);
                         }
                     } else {
-                        nameString = UserObject.getUserName(user);
+                        nameString = AndroidUtilities.removeDiacritics(UserObject.getUserName(user));
                     }
                 }
                 if (nameString != null && nameString.length() == 0) {
@@ -2321,7 +2350,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             spoilersPool.addAll(spoilers);
             spoilers.clear();
-            if (Config.displaySpoilerMsgDirectly) {
+            if (!Config.displaySpoilerMsgDirectly) {
                 SpoilerEffect.addSpoilers(this, messageLayout, -2, -2, spoilersPool, spoilers);
             }
         } catch (Exception e) {
@@ -4864,7 +4893,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             return;
         }
         String restrictionReason = MessagesController.getRestrictionReason(message.messageOwner.restriction_reason);
-        if (groupMessages != null && groupMessages.size() > 1 && TextUtils.isEmpty(restrictionReason) && currentDialogFolderId == 0 && encryptedChat == null) {
+        if (message != null && message.messageOwner != null && message.messageOwner.media instanceof TLRPC.TL_messageMediaPaidMedia) {
+            thumbsCount = 0;
+            hasVideoThumb = false;
+            TLRPC.TL_messageMediaPaidMedia paidMedia = (TLRPC.TL_messageMediaPaidMedia) message.messageOwner.media;
+            int index = 0;
+            for (int i = 0; i < paidMedia.extended_media.size() && thumbsCount < 3; ++i) {
+                TLRPC.MessageExtendedMedia emedia = paidMedia.extended_media.get(i);
+                if (emedia instanceof TLRPC.TL_messageExtendedMediaPreview) {
+                    setThumb(index++, ((TLRPC.TL_messageExtendedMediaPreview) emedia).thumb);
+                } else if (emedia instanceof TLRPC.TL_messageExtendedMedia) {
+                    setThumb(index++, ((TLRPC.TL_messageExtendedMedia) emedia).media);
+                }
+            }
+        } else if (groupMessages != null && groupMessages.size() > 1 && TextUtils.isEmpty(restrictionReason) && currentDialogFolderId == 0 && encryptedChat == null) {
             thumbsCount = 0;
             hasVideoThumb = false;
             Collections.sort(groupMessages, Comparator.comparingInt(MessageObject::getId));
@@ -4908,7 +4950,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, 40);
-        TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize());
+        TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize(), false, null, true);
         if (smallThumb == bigThumb) {
             bigThumb = null;
         }
@@ -4927,6 +4969,60 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 String filter = message.hasMediaSpoilers() ? "5_5_b" : "20_20";
                 thumbImage[index].setImage(ImageLocation.getForObject(selectedThumb, photoThumbsObject), filter, ImageLocation.getForObject(smallThumb, photoThumbsObject), filter, size, null, message, 0);
                 thumbImage[index].setRoundRadius(message.isRoundVideo() ? dp(18) : dp(2));
+                needEmoji = false;
+            }
+        }
+    }
+
+    private void setThumb(int index, TLRPC.MessageMedia media) {
+        TLObject object = null;
+        ArrayList<TLRPC.PhotoSize> photoThumbs = null;
+        boolean isVideo = false;
+        if (media instanceof TLRPC.TL_messageMediaPhoto) {
+            object = media.photo;
+            photoThumbs = media.photo.sizes;
+        } else if (media instanceof TLRPC.TL_messageMediaDocument) {
+            isVideo = MessageObject.isVideoDocument(media.document);
+            object = media.document;
+            photoThumbs = media.document.thumbs;
+        }
+
+        TLRPC.PhotoSize smallThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, 40);
+        TLRPC.PhotoSize bigThumb = FileLoader.getClosestPhotoSizeWithSize(photoThumbs, AndroidUtilities.getPhotoSize(), false, null, true);
+        if (smallThumb == bigThumb) {
+            bigThumb = null;
+        }
+        TLRPC.PhotoSize selectedThumb = bigThumb;
+        if (selectedThumb == null || DownloadController.getInstance(currentAccount).canDownloadMedia(message.messageOwner, media) == 0) {
+            selectedThumb = smallThumb;
+        }
+
+        if (smallThumb != null) {
+            hasVideoThumb = hasVideoThumb || isVideo;
+            if (thumbsCount < 3) {
+                thumbsCount++;
+                drawPlay[index] = isVideo;
+                drawSpoiler[index] = false;
+                int size = !isVideo && selectedThumb != null ? selectedThumb.size : 0;
+                String filter = "20_20";
+                thumbImage[index].setImage(ImageLocation.getForObject(selectedThumb, object), filter, ImageLocation.getForObject(smallThumb, object), filter, size, null, message, 0);
+                thumbImage[index].setRoundRadius(dp(2));
+                needEmoji = false;
+            }
+        }
+    }
+
+    private void setThumb(int index, TLRPC.PhotoSize thumb) {
+        if (thumb != null) {
+            hasVideoThumb = false;
+            if (thumbsCount < 3) {
+                thumbsCount++;
+                drawPlay[index] = false;
+                drawSpoiler[index] = true;
+                int size = 0;
+                String filter = "2_2_b";
+                thumbImage[index].setImage(ImageLocation.getForObject(thumb, message.messageOwner), filter, null, null, size, null, message, 0);
+                thumbImage[index].setRoundRadius(dp(2));
                 needEmoji = false;
             }
         }
@@ -4972,29 +5068,29 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         if (currentDialogId == selfId) {
             if (fromUser != null) {
-                return UserObject.getFirstName(fromUser).replace("\n", "");
+                return AndroidUtilities.removeDiacritics(UserObject.getFirstName(fromUser).replace("\n", ""));
             } else if (fromChat != null) {
-                return fromChat.title.replace("\n", "");
+                return AndroidUtilities.removeDiacritics(fromChat.title.replace("\n", ""));
             }
             return null;
         } else if (message.isOutOwner()) {
             return LocaleController.getString("FromYou", R.string.FromYou);
         } else if (!isSavedDialog && message != null && message.messageOwner != null && message.messageOwner.from_id instanceof TLRPC.TL_peerUser && (user = MessagesController.getInstance(currentAccount).getUser(message.messageOwner.from_id.user_id)) != null) {
-            return UserObject.getFirstName(user).replace("\n", "");
+            return AndroidUtilities.removeDiacritics(UserObject.getFirstName(user).replace("\n", ""));
         } else if (message != null && message.messageOwner != null && message.messageOwner.fwd_from != null && message.messageOwner.fwd_from.from_name != null) {
-            return message.messageOwner.fwd_from.from_name;
+            return AndroidUtilities.removeDiacritics(message.messageOwner.fwd_from.from_name);
         } else if (fromUser != null) {
             if (useForceThreeLines || SharedConfig.useThreeLinesLayout) {
                 if (UserObject.isDeleted(fromUser)) {
                     return LocaleController.getString("HiddenName", R.string.HiddenName);
                 } else {
-                    return ContactsController.formatName(fromUser.first_name, fromUser.last_name).replace("\n", "");
+                    return AndroidUtilities.removeDiacritics(ContactsController.formatName(fromUser.first_name, fromUser.last_name).replace("\n", ""));
                 }
             } else {
-                return UserObject.getFirstName(fromUser).replace("\n", "");
+                return AndroidUtilities.removeDiacritics(UserObject.getFirstName(fromUser).replace("\n", ""));
             }
         } else if (fromChat != null && fromChat.title != null) {
-            return fromChat.title.replace("\n", "");
+            return AndroidUtilities.removeDiacritics(fromChat.title.replace("\n", ""));
         } else {
             return "DELETED";
         }
@@ -5079,14 +5175,28 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         } else if (message.messageOwner.media != null && !message.isMediaEmpty()) {
             currentMessagePaint = Theme.dialogs_messagePrintingPaint[paintIndex];
-            String innerMessage;
+            CharSequence innerMessage;
             int colorKey = Theme.key_chats_attachMessage;
             if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPoll) {
                 TLRPC.TL_messageMediaPoll mediaPoll = (TLRPC.TL_messageMediaPoll) message.messageOwner.media;
                 if (Build.VERSION.SDK_INT >= 18) {
-                    innerMessage = String.format("\uD83D\uDCCA \u2068%s\u2069", mediaPoll.poll.question);
+                    if (mediaPoll.poll.question != null && mediaPoll.poll.question.entities != null) {
+                        SpannableStringBuilder questionText = new SpannableStringBuilder(mediaPoll.poll.question.text.replace('\n', ' '));
+                        MediaDataController.addTextStyleRuns(mediaPoll.poll.question.entities, mediaPoll.poll.question.text, questionText);
+                        MediaDataController.addAnimatedEmojiSpans(mediaPoll.poll.question.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                        innerMessage = new SpannableStringBuilder("\uD83D\uDCCA \u2068").append(questionText).append("\u2069");
+                    } else {
+                        innerMessage = String.format("\uD83D\uDCCA \u2068%s\u2069", mediaPoll.poll.question.text);
+                    }
                 } else {
-                    innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question);
+                    if (mediaPoll.poll.question != null && mediaPoll.poll.question.entities != null) {
+                        SpannableStringBuilder questionText = new SpannableStringBuilder(mediaPoll.poll.question.text.replace('\n', ' '));
+                        MediaDataController.addTextStyleRuns(mediaPoll.poll.question.entities, mediaPoll.poll.question.text, questionText);
+                        MediaDataController.addAnimatedEmojiSpans(mediaPoll.poll.question.entities, questionText, Theme.dialogs_messagePaint[paintIndex].getFontMetricsInt());
+                        innerMessage = new SpannableStringBuilder("\uD83D\uDCCA ").append(questionText);
+                    } else {
+                        innerMessage = String.format("\uD83D\uDCCA %s", mediaPoll.poll.question.text);
+                    }
                 }
             } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaGame) {
                 if (Build.VERSION.SDK_INT >= 18) {
@@ -5102,6 +5212,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 } else {
                     innerMessage = String.format("\uD83C\uDFA7 %s - %s", message.getMusicAuthor(), message.getMusicTitle());
                 }
+            } else if (message.messageOwner.media instanceof TLRPC.TL_messageMediaPaidMedia) {
+                TLRPC.TL_messageMediaPaidMedia paidMedia = (TLRPC.TL_messageMediaPaidMedia) message.messageOwner.media;
+                final int count = paidMedia.extended_media.size();
+                if (hasVideoThumb) {
+                    innerMessage = count > 1 ? LocaleController.formatPluralString("Media", count) : LocaleController.getString(R.string.AttachVideo);
+                } else {
+                    innerMessage = count > 1 ? LocaleController.formatPluralString("Photos", count) : LocaleController.getString(R.string.AttachPhoto);
+                }
+                innerMessage = StarsIntroActivity.replaceStars(LocaleController.formatString(R.string.AttachPaidMedia, innerMessage));
+                colorKey = Theme.key_chats_actionMessage;
             } else if (thumbsCount > 1) {
                 if (hasVideoThumb) {
                     innerMessage = LocaleController.formatPluralString("Media", groupMessages == null ? 0 : groupMessages.size());
@@ -5113,7 +5233,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 innerMessage = msgText.toString();
                 colorKey = Theme.key_chats_actionMessage;
             }
-            innerMessage = innerMessage.replace('\n', ' ');
+            if (innerMessage instanceof String) {
+                innerMessage = ((String) innerMessage).replace('\n', ' ');
+            }
             CharSequence message = innerMessage;
             if (applyThumbs) {
                 message = applyThumbs(innerMessage);
@@ -5476,7 +5598,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     }
                     if (boldLen > 0) {
                         spannableStringBuilder.setSpan(
-                                new TypefaceSpan(AndroidUtilities.getTypeface("fonts/rmedium.ttf"), 0, Theme.key_chats_name, null),
+                                new TypefaceSpan(AndroidUtilities.bold(), 0, Theme.key_chats_name, null),
                                 0, Math.min(spannableStringBuilder.length(), boldLen + 2), 0
                         );
                     }
@@ -5531,5 +5653,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             invalidate();
         }
+    }
+
+    @Override
+    protected boolean allowCaching() {
+        return rightFragmentOpenedProgress <= 0;
     }
 }

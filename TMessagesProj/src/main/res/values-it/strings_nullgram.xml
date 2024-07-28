@@ -1,4 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+  ~ https://github.com/qwq233/Nullgram
+  ~
+  ~ This program is free software; you can redistribute it and/or
+  ~ modify it under the terms of the GNU General Public License
+  ~ as published by the Free Software Foundation; either version 2
+  ~ of the License, or (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License along with this software.
+  ~  If not, see
+  ~ <https://www.gnu.org/licenses/>
+  -->
 <resources>
     <string name="NullgramPushService">Servizio notifiche push Nullgram</string>
     <string name="NullSettings">Impostazioni Nullgram</string>
@@ -213,7 +231,6 @@
     <string name="ignoreMutedCount">Non contare chat silenziate su schede</string>
     <string name="disableSharePhoneWithContactByDefault">Non condividere numero su aggiunta contatto</string>
     <string name="disableStickersAutoReorder">Disattiva autoriordino stickerpack</string>
-    <string name="Ban">Ban</string>
     <string name="autoDisableBuiltInProxy">Disattiva automaticamente proxy integrato</string>
     <string name="autoDisableBuiltInProxyDesc">Disattiverà automaticamente il proxy integrato in Nullgram non appena riconoscerà la VPN</string>
     <string name="NullgramWsDescription">Connettiti a TELEOFFICIAL attraverso WebSocket via Cloudflare.\nFornito da Nullgram</string>
@@ -316,10 +333,16 @@
     <string name="ShowTitle">Mostra titolo</string>
     <string name="HideTitle">Nascondi titolo</string>
     <string name="showHideTitle">Mostra nascondi titolo</string>
-    <string name="DownloadingStickerSet">Downloading sticker set…</string>
+    <string name="DownloadingStickerSet">Download sticker pack...</string>
     <string name="IncompleteDownload">Download scaduto, controlla la tua connessione</string>
     <string name="StickerPackNotFound">Pacchetto sticker non trovato.</string>
-    <string name="MessageFilter">Message Filter</string>
-    <string name="Pattern">Pattern</string>
-    <string name="MessageFilterDesc">Use regular expressions to match messages, and the matched messages will be hidden.\nLeave it blank to disable it</string>
+    <string name="MessageFilter">Filtro messaggi</string>
+    <string name="Pattern">Modello</string>
+    <string name="MessageFilterDesc">Usa le espressioni regolari per filtrare i messaggi da nascondere.\nLascialo vuoto per disattivarlo.</string>
+    <string name="SaveToDownloadCount_zero">Sto salvando %1$d file nei download</string>
+    <string name="SaveToDownloadCount_one">Sto salvando %1$d file nei download</string>
+    <string name="SaveToDownloadCount_two">Sto salvando %1$d file nei download</string>
+    <string name="SaveToDownloadCount_few">Sto salvando %1$d file nei download</string>
+    <string name="SaveToDownloadCount_many">Sto salvando %1$d file nei download</string>
+    <string name="SaveToDownloadCount_other">Sto salvando %1$d file nei download</string>
 </resources>

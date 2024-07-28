@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.ui.ActionBar;
@@ -123,11 +134,19 @@ public class ActionBarMenuItem extends FrameLayout {
         public void onSearchPressed(EditText editText) {
         }
 
+        public boolean canClearCaption() {
+            return true;
+        }
+
         public void onCaptionCleared() {
         }
 
         public boolean forceShowClear() {
             return false;
+        }
+
+        public boolean showClearForCaption() {
+            return true;
         }
 
         public Animator getCustomToggleTransition() {
@@ -235,7 +254,7 @@ public class ActionBarMenuItem extends FrameLayout {
         if (text) {
             textView = new TextView(context);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setGravity(Gravity.CENTER);
             textView.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
             textView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -588,7 +607,30 @@ public class ActionBarMenuItem extends FrameLayout {
         return cell;
     }
 
-    public ActionBarMenuSubItem addSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
+    public View addSubItem(int id, View cell) {
+        createPopupLayout();
+
+        cell.setMinimumWidth(AndroidUtilities.dp(196));
+        cell.setTag(id);
+        popupLayout.addView(cell);
+        LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) cell.getLayoutParams();
+        if (LocaleController.isRTL) {
+            layoutParams.gravity = Gravity.RIGHT;
+        }
+        layoutParams.width = LayoutHelper.MATCH_PARENT;
+        layoutParams.height = AndroidUtilities.dp(48);
+        cell.setLayoutParams(layoutParams);
+        cell.setOnClickListener(view -> {
+            if (parentMenu != null) {
+                parentMenu.onItemClick((Integer) view.getTag());
+            } else if (delegate != null) {
+                delegate.onItemClick((Integer) view.getTag());
+            }
+        });
+        return cell;
+    }
+
+   public ActionBarMenuSubItem addSwipeBackItem(int icon, Drawable iconDrawable, String text, View viewToSwipeBack) {
         createPopupLayout();
 
         ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getContext(), false, false, false, resourcesProvider);
@@ -1577,7 +1619,7 @@ public class ActionBarMenuItem extends FrameLayout {
                         }
                     }
                     clearSearchFilters();
-                } else if (searchFieldCaption != null && searchFieldCaption.getVisibility() == VISIBLE) {
+                } else if (searchFieldCaption != null && searchFieldCaption.getVisibility() == VISIBLE && (listener == null || listener.canClearCaption())) {
                     searchFieldCaption.setVisibility(GONE);
                     if (listener != null) {
                         listener.onCaptionCleared();
@@ -1608,7 +1650,7 @@ public class ActionBarMenuItem extends FrameLayout {
         if (clearButton != null) {
             if (!hasRemovableFilters() && TextUtils.isEmpty(searchField.getText()) &&
                     (listener == null || !listener.forceShowClear()) &&
-                    (searchFieldCaption == null || searchFieldCaption.getVisibility() != VISIBLE)) {
+                    (searchFieldCaption == null || searchFieldCaption.getVisibility() != VISIBLE || listener != null && !listener.showClearForCaption())) {
                 if (clearButton.getTag() != null) {
                     clearButton.setTag(null);
                     if (clearButtonAnimator != null) {
@@ -1925,6 +1967,9 @@ public class ActionBarMenuItem extends FrameLayout {
         showSubItem(id, false);
     }
 
+    public View getSubItem(int id) {
+        return popupLayout.findViewWithTag(id);
+    }
     public void showSubItem(int id, boolean animated) {
         Item lazyItem = findLazyItem(id);
         if (lazyItem != null) {

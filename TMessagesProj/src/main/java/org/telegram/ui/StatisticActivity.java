@@ -38,7 +38,6 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.checkerframework.checker.units.qual.A;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -573,7 +572,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         TLRPC.Chat currentChat = MessagesController.getInstance(currentAccount).getChat(chatId);
         TLRPC.ChatFull chatFull = MessagesController.getInstance(currentAccount).getChatFull(chatId);
         boolean isBoostSupported = ChatObject.isBoostSupported(currentChat);
-        final boolean hasMonetization = ChatObject.isChannelAndNotMegaGroup(currentChat) && chatFull != null && chatFull.can_view_revenue;
+        final boolean hasMonetization = ChatObject.isChannelAndNotMegaGroup(currentChat) && chatFull != null && (chatFull.can_view_revenue || chatFull.can_view_stars_revenue);
         BottomPagerTabs storiesTabsView = new BottomPagerTabs(context, getResourceProvider()) {
             @Override
             public Tab[] createTabs() {
@@ -609,7 +608,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             boostLayout = new ChannelBoostLayout(StatisticActivity.this, -chatId, getResourceProvider());
         }
         if (hasMonetization) {
-            monetizationLayout = new ChannelMonetizationLayout(getContext(), StatisticActivity.this, currentAccount, -chatId, getResourceProvider());
+            monetizationLayout = new ChannelMonetizationLayout(getContext(), StatisticActivity.this, currentAccount, -chatId, getResourceProvider(), chatFull.can_view_revenue, chatFull.can_view_stars_revenue);
+            monetizationLayout.setActionBar(actionBar);
         }
         boolean showTabs = isBoostSupported && !onlyBoostsStat;
         if (showTabs && startFromBoosts) {
@@ -698,7 +698,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         TextView loadingTitle = new TextView(context);
         loadingTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        loadingTitle.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        loadingTitle.setTypeface(AndroidUtilities.bold());
         loadingTitle.setTextColor(Theme.getColor(Theme.key_player_actionBarTitle));
         loadingTitle.setTag(Theme.key_player_actionBarTitle);
         loadingTitle.setText(getString("LoadingStats", R.string.LoadingStats));
@@ -1636,7 +1636,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                         }
                         currentW += getChildAt(i).getMeasuredWidth();
                     }
-                    setMeasuredDimension(getMeasuredWidth(), firstH + currentH + dp(16));
+                    setMeasuredDimension(getMeasuredWidth(), getChildCount() == 0 ? 0 : firstH + currentH + dp(16));
                 }
 
                 @Override
@@ -1999,7 +1999,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 progressView.setVisibility(View.GONE);
             }
 
-            chartView.setData(viewData.chartData);
+            if (chartView.setData(viewData.chartData)) {
+                if (viewData.showAll) {
+                    chartView.pickerDelegate.set(0f, 1f);
+                }
+            }
             chartHeaderView.setUseWeekInterval(viewData.useWeekFormat);
             chartView.legendSignatureView.setUseWeek(viewData.useWeekFormat);
 
@@ -2187,10 +2191,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         public String errorMessage;
         public long activeZoom;
         public boolean viewShowed;
-        ChartData chartData;
+        public ChartData chartData;
         ChartData childChartData;
         String token;
         String zoomToken;
+        public boolean showAll;
 
         final int graphType;
         final String title;
@@ -2947,7 +2952,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     secondary[i * 2 + j] = new TextView(context);
                     title[i * 2 + j] = new TextView(context);
 
-                    primary[i * 2 + j].setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                    primary[i * 2 + j].setTypeface(AndroidUtilities.bold());
                     primary[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
                     title[i * 2 + j].setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                     title[i * 2 + j].setGravity(Gravity.LEFT);

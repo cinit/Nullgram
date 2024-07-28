@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.ui.Cells;
@@ -44,7 +55,6 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.CheckBox;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
@@ -141,7 +151,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             addButton.setGravity(Gravity.CENTER);
             addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            addButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            addButton.setTypeface(AndroidUtilities.bold());
             addButton.setBackgroundDrawable(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
             addButton.setText(LocaleController.getString("Add", R.string.Add));
             addButton.setPadding(AndroidUtilities.dp(17), 0, AndroidUtilities.dp(17), 0);
@@ -181,7 +191,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
         nameTextView = new SimpleTextView(context);
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-        nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
         addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 20, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, LocaleController.isRTL ? 28 + (checkbox == 2 ? 18 : 0) + additionalPadding : (64 + padding), 10, LocaleController.isRTL ? (64 + padding) : 28 + (checkbox == 2 ? 18 : 0) + additionalPadding, 0));
@@ -489,9 +499,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             }
             if (!continueUpdate && currentName == null && lastName != null && (mask & MessagesController.UPDATE_MASK_NAME) != 0) {
                 if (currentUser != null) {
-                    newName = UserObject.getUserName(currentUser);
+                    newName = AndroidUtilities.removeDiacritics(UserObject.getUserName(currentUser));
                 } else {
-                    newName = currentChat.title;
+                    newName = AndroidUtilities.removeDiacritics(currentChat == null ? "" : currentChat.title);
                 }
                 if (!newName.equals(lastName)) {
                     continueUpdate = true;
@@ -570,9 +580,9 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             nameTextView.setText(currentName);
         } else {
             if (currentUser != null) {
-                lastName = newName == null ? UserObject.getUserName(currentUser) : newName;
+                lastName = AndroidUtilities.removeDiacritics(newName == null ? UserObject.getUserName(currentUser) : newName);
             } else if (currentChat != null) {
-                lastName = newName == null ? currentChat.title : newName;
+                lastName = AndroidUtilities.removeDiacritics(newName == null ? currentChat.title : newName);
             } else {
                 lastName = "";
             }
@@ -768,7 +778,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
     }
 
-    public void setCloseIcon(Runnable onClick) {
+    public void setCloseIcon(View.OnClickListener onClick) {
         if (onClick == null) {
             if (closeView != null) {
                 removeView(closeView);
@@ -784,7 +794,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_AUTO));
                 addView(closeView, LayoutHelper.createFrame(30, 30, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 0));
             }
-            closeView.setOnClickListener(v -> onClick.run());
+            closeView.setOnClickListener(onClick);
         }
     }
 }

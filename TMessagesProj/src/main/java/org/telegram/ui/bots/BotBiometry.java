@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.bots;
 
 import android.app.Activity;
@@ -55,6 +74,7 @@ public class BotBiometry {
     public boolean access_requested;
 
     private String encrypted_token;
+    private String iv;
 
     public BotBiometry(Context context, int currentAccount, long botId) {
         this.context = context;
@@ -66,6 +86,7 @@ public class BotBiometry {
     public void load() {
         SharedPreferences prefs = context.getSharedPreferences(PREF + currentAccount, Activity.MODE_PRIVATE);
         this.encrypted_token = prefs.getString(String.valueOf(botId), null);
+        this.iv = prefs.getString(String.valueOf(botId)+"_iv", null);
         this.access_granted = this.encrypted_token != null;
         this.access_requested = this.access_granted || prefs.getBoolean(botId + "_requested", false);
         this.disabled = prefs.getBoolean(botId + "_disabled", false);
@@ -93,18 +114,25 @@ public class BotBiometry {
             String token = null;
             if (result != null) {
                 try {
-                    BiometricPrompt.CryptoObject cryptoObject = result.getCryptoObject();
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                        if (!TextUtils.isEmpty(encrypted_token)) {
-                            token = encrypted_token.split(";")[0];
-                        } else {
-                            token = encrypted_token;
-                        }
-                    } else if (cryptoObject != null) {
-                        token = new String(cryptoObject.getCipher().doFinal(Utilities.hexToBytes(encrypted_token.split(";")[0])), StandardCharsets.UTF_8);
+                        token = encrypted_token;
                     } else {
-                        if (!TextUtils.isEmpty(encrypted_token)) {
-                            throw new RuntimeException("No cryptoObject found");
+                        BiometricPrompt.CryptoObject cryptoObject;
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            cryptoObject = makeCryptoObject(true);
+                        } else {
+                            cryptoObject = result.getCryptoObject();
+                        }
+                        if (cryptoObject != null) {
+                            if (!TextUtils.isEmpty(encrypted_token)) {
+                                token = new String(cryptoObject.getCipher().doFinal(Utilities.hexToBytes(encrypted_token)), StandardCharsets.UTF_8);
+                            } else {
+                                token = encrypted_token;
+                            }
+                        } else {
+                            if (!TextUtils.isEmpty(encrypted_token)) {
+                                throw new RuntimeException("No cryptoObject found");
+                            }
                         }
                     }
                 } catch (Exception e) {
@@ -118,18 +146,25 @@ public class BotBiometry {
 
     public void updateToken(String reason, String token, Utilities.Callback<Boolean> whenDone) {
         prompt(reason, false, token, result -> {
-            boolean success = true;
+            boolean success = result != null;
             if (result != null) {
                 try {
                     BiometricPrompt.CryptoObject cryptoObject = result.getCryptoObject();
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                    if (TextUtils.isEmpty(token)) {
+                        encrypted_token = null;
+                        iv = null;
+                    } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                         encrypted_token = token;
+                        iv = null;
                     } else {
-                        if (cryptoObject == null) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             cryptoObject = makeCryptoObject(false);
+                        } else {
+                            cryptoObject = result.getCryptoObject();
                         }
                         if (cryptoObject != null) {
-                            encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8))) + ";" + Utilities.bytesToHex(cryptoObject.getCipher().getIV());
+                            encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8)));
+                            iv = Utilities.bytesToHex(cryptoObject.getCipher().getIV());
                         } else {
                             throw new RuntimeException("No cryptoObject found");
                         }
@@ -171,11 +206,11 @@ public class BotBiometry {
             @Override
             public void onAuthenticationFailed() {
                 FileLog.d("BotBiometry onAuthenticationFailed");
-                if (callback != null) {
-                    Utilities.Callback<BiometricPrompt.AuthenticationResult> thisCallback = callback;
-                    callback = null;
-                    thisCallback.run(null);
-                }
+//                if (callback != null) {
+//                    Utilities.Callback<BiometricPrompt.AuthenticationResult> thisCallback = callback;
+//                    callback = null;
+//                    thisCallback.run(null);
+//                }
             }
         });
     }
@@ -186,7 +221,7 @@ public class BotBiometry {
                 Cipher cipher = getCipher();
                 SecretKey secretKey = getSecretKey();
                 if (decrypt) {
-                    cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(Utilities.hexToBytes(encrypted_token.split(";")[1])));
+                    cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(Utilities.hexToBytes(iv)));
                 } else {
                     cipher.init(Cipher.ENCRYPT_MODE, secretKey);
                 }
@@ -223,9 +258,16 @@ public class BotBiometry {
             promptInfoBuilder.setDescription(text);
         }
         final BiometricPrompt.PromptInfo promptInfo = promptInfoBuilder.build();
-        if (cryptoObject != null && !decrypt) {
+        if (cryptoObject != null && !decrypt && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             try {
-                encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8))) + ";" + Utilities.bytesToHex(cryptoObject.getCipher().getIV());
+                if (TextUtils.isEmpty(token)) {
+                    encrypted_token = null;
+                } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                    encrypted_token = token;
+                } else {
+                    encrypted_token = Utilities.bytesToHex(cryptoObject.getCipher().doFinal(token.getBytes(StandardCharsets.UTF_8)));
+                    iv = Utilities.bytesToHex(cryptoObject.getCipher().getIV());
+                }
                 save();
                 this.callback = null;
                 whenDone.run(null);
@@ -235,7 +277,7 @@ public class BotBiometry {
             }
             cryptoObject = makeCryptoObject(decrypt);
         }
-        if (cryptoObject != null) {
+        if (cryptoObject != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             prompt.authenticate(promptInfo, cryptoObject);
         } else {
             prompt.authenticate(promptInfo);
@@ -250,11 +292,11 @@ public class BotBiometry {
             keyStore = KeyStore.getInstance("AndroidKeyStore");
             keyStore.load(null);
         }
-        if (keyStore.containsAlias("6bot_" + botId)) {
-            return ((SecretKey) keyStore.getKey("6bot_" + botId, null));
+        if (keyStore.containsAlias("9bot_" + botId)) {
+            return ((SecretKey) keyStore.getKey("9bot_" + botId, null));
         } else {
             KeyGenParameterSpec.Builder keygenBuilder = new KeyGenParameterSpec.Builder(
-                    "6bot_" + botId,
+                    "9bot_" + botId,
                     KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT
             );
             keygenBuilder.setBlockModes(KeyProperties.BLOCK_MODE_CBC);
@@ -262,8 +304,6 @@ public class BotBiometry {
             keygenBuilder.setUserAuthenticationRequired(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 keygenBuilder.setUserAuthenticationParameters(60, KeyProperties.AUTH_BIOMETRIC_STRONG);
-            } else {
-                keygenBuilder.setUserAuthenticationValidityDurationSeconds(60);
             }
             if (Build.VERSION.SDK_INT >= 24) {
                 keygenBuilder.setInvalidatedByBiometricEnrollment(true);
@@ -322,8 +362,10 @@ public class BotBiometry {
         }
         if (access_granted) {
             edit.putString(String.valueOf(botId), encrypted_token == null ? "" : encrypted_token);
+            edit.putString(String.valueOf(botId)+"_iv", iv == null ? "" : iv);
         } else {
             edit.remove(String.valueOf(botId));
+            edit.remove(String.valueOf(botId)+"_iv");
         }
         if (disabled) {
             edit.putBoolean(botId + "_disabled", true);

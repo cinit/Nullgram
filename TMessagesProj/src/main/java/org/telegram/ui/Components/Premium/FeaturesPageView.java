@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Components.Premium;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -277,7 +296,7 @@ public class FeaturesPageView extends BaseListPageView {
 
                 TextView textView = new TextView(context);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                 textView.setText(LocaleController.getString("UpgradedStories", R.string.UpgradedStories));
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 111, 0, 0));
@@ -335,7 +354,7 @@ public class FeaturesPageView extends BaseListPageView {
                 Canvas canvas = new Canvas(bitmap);
                 canvas.drawColor(ColorUtils.blendARGB(Theme.getColor(Theme.key_premiumGradient2, resourcesProvider), Theme.getColor(Theme.key_dialogBackground, resourcesProvider), 0.5f));
                 iconTextureView.setBackgroundBitmap(bitmap);
-                iconTextureView.mRenderer.forceNight = true;
+//                iconTextureView.mRenderer.forceNight = true;
                 iconTextureView.mRenderer.colorKey1 = Theme.key_premiumGradient2;
                 iconTextureView.mRenderer.colorKey2 = Theme.key_premiumGradient1;
                 iconTextureView.mRenderer.updateColors();
@@ -347,7 +366,7 @@ public class FeaturesPageView extends BaseListPageView {
 
                 TextView textView = new TextView(context);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                textView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                 textView.setText(LocaleController.getString(R.string.TelegramBusiness));
                 textView.setGravity(Gravity.CENTER);
@@ -403,7 +422,7 @@ public class FeaturesPageView extends BaseListPageView {
             addView(imageView, LayoutHelper.createFrame(28, 28, 0, 25, 12, 16, 0));
 
             textView = new TextView(context);
-            textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textView.setTypeface(AndroidUtilities.bold());
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 68, 8, 16, 0));

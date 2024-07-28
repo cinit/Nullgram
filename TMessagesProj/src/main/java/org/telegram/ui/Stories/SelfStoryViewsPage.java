@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Stories;
 
 import android.animation.Animator;
@@ -41,6 +60,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -183,7 +203,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         titleView = new TextView(context);
         titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-        titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
 
         headerView = new HeaderView(getContext());
@@ -520,6 +540,9 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
         this.storyItem = storyItem;
         updateViewsVisibility();
         updateViewState(false);
+        if (storyItem != null && storyItem.storyItem != null) {
+            NotificationsController.getInstance(currentAccount).processSeenStoryReactions(dialogId, storyItem.storyItem.id);
+        }
     }
 
     private void updateViewsVisibility() {
@@ -780,7 +803,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                     view = new FixedHeightEmptyCell(getContext(), 70);
                     break;
                 case USER_ITEM:
-                    view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_STORY, currentAccount, getContext(), resourcesProvider, false) {
+                    view = new ReactedUserHolderView(ReactedUserHolderView.STYLE_STORY, currentAccount, getContext(), resourcesProvider, false, true) {
                         @Override
                         public void openStory(long dialogId, Runnable onDone) {
                             BaseFragment lastFragment = LaunchActivity.getLastFragment();
@@ -935,7 +958,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                 if (item.view != null) {
                     boolean like = false;
                     if (item.view.reaction != null) {
-                        ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(item.view.reaction);
+                        ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(item.view.reaction);
                         if (visibleReaction != null && visibleReaction.emojicon != null && visibleReaction.emojicon.equals("\u2764")) {
                             like = true;
                         }
@@ -957,7 +980,7 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
                         TL_stories.TL_storyReaction reaction = (TL_stories.TL_storyReaction) peerReaction;
                         boolean like = false;
                         if (reaction.reaction != null) {
-                            ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTLReaction(reaction.reaction);
+                            ReactionsLayoutInBubble.VisibleReaction visibleReaction = ReactionsLayoutInBubble.VisibleReaction.fromTL(reaction.reaction);
                             if (visibleReaction != null && visibleReaction.emojicon != null && visibleReaction.emojicon.equals("\u2764")) {
                                 like = true;
                             }
@@ -1432,14 +1455,14 @@ public class SelfStoryViewsPage extends FrameLayout implements NotificationCente
             allViewersView.setText(LocaleController.getString("AllViewers", R.string.AllViewers));
             allViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             allViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            allViewersView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            allViewersView.setTypeface(AndroidUtilities.bold());
             allViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
 
             contactsViewersView = new TextView(context);
             contactsViewersView.setText(LocaleController.getString("Contacts", R.string.Contacts));
             contactsViewersView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
             contactsViewersView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            contactsViewersView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            contactsViewersView.setTypeface(AndroidUtilities.bold());
             contactsViewersView.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
 
             linearLayout.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));

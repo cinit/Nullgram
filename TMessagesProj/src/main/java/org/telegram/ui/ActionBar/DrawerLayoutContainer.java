@@ -43,6 +43,7 @@ import androidx.annotation.Nullable;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
+import org.telegram.ui.Components.PasscodeView;
 
 import top.qwq2333.nullgram.utils.Log;
 
@@ -447,7 +448,7 @@ public class DrawerLayoutContainer extends FrameLayout {
                 return true;
             }
 
-            if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.getFragmentStack().size() == 1 && (parentActionBarLayout.getLastFragment().getLastStoryViewer() == null || !parentActionBarLayout.getLastFragment().getLastStoryViewer().attachedToParent())) {
+            if ((allowOpenDrawerBySwipe || drawerOpened) && allowOpenDrawer && parentActionBarLayout.getFragmentStack().size() == 1 && (parentActionBarLayout.getLastFragment().getLastSheet() == null || !parentActionBarLayout.getLastFragment().getLastSheet().attachedToParent())) {
                 if (ev != null && (ev.getAction() == MotionEvent.ACTION_DOWN || ev.getAction() == MotionEvent.ACTION_MOVE) && !startedTracking && !maybeStartTracking) {
                    View scrollingChild = findScrollingChild(this, ev.getX(),ev.getY());
                    if (scrollingChild != null) {

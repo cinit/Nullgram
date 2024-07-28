@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.ui.Components;
@@ -93,9 +104,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import kotlin.Unit;
-import top.qwq2333.nullgram.ui.BottomBuilder;
 
 public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -291,7 +299,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             nameTextView.setEllipsize(TextUtils.TruncateAt.END);
             nameTextView.setSingleLine(true);
             nameTextView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-            nameTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            nameTextView.setTypeface(AndroidUtilities.bold());
             nameTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
             lastPressedMarkerView.addView(nameTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT), 18, 10, 18, 0));
 
@@ -558,7 +566,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         searchAreaButton.setBackgroundDrawable(drawable);
         searchAreaButton.setTextColor(getThemedColor(Theme.key_location_actionActiveIcon));
         searchAreaButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        searchAreaButton.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        searchAreaButton.setTypeface(AndroidUtilities.bold());
         searchAreaButton.setText(LocaleController.getString("PlacesInThisArea", R.string.PlacesInThisArea));
         searchAreaButton.setGravity(Gravity.CENTER);
         searchAreaButton.setPadding(AndroidUtilities.dp(20), 0, AndroidUtilities.dp(20), 0);
@@ -731,7 +739,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         emptyTitleTextView = new TextView(context);
         emptyTitleTextView.setTextColor(getThemedColor(Theme.key_dialogEmptyText));
         emptyTitleTextView.setGravity(Gravity.CENTER);
-        emptyTitleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        emptyTitleTextView.setTypeface(AndroidUtilities.bold());
         emptyTitleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
         emptyTitleTextView.setText(LocaleController.getString("NoPlacesFound", R.string.NoPlacesFound));
         emptyView.addView(emptyTitleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 11, 0, 0));
@@ -751,7 +759,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
             }
         };
         listView.setClipToPadding(false);
-        listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, true, resourcesProvider, parentAlert.isStoryLocationPicker, parentAlert.isBizLocationPicker));
+        listView.setAdapter(adapter = new LocationActivityAdapter(context, locationType, dialogId, true, resourcesProvider, parentAlert.isStoryLocationPicker, false, parentAlert.isBizLocationPicker));
         DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
         itemAnimator.setDurations(350);
         itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -1247,7 +1255,7 @@ public class ChatAttachAlertLocationLayout extends ChatAttachAlert.AttachAlertLa
         if (DialogObject.isUserDialog(dialogId)) {
             user = parentAlert.baseFragment.getMessagesController().getUser(dialogId);
         }
-        AlertsCreator.createLocationUpdateDialog(getParentActivity(), user, param -> {
+        AlertsCreator.createLocationUpdateDialog(getParentActivity(), false, user, param -> {
             TLRPC.TL_messageMediaGeoLive location = new TLRPC.TL_messageMediaGeoLive();
             location.geo = new TLRPC.TL_geoPoint();
             location.geo.lat = AndroidUtilities.fixLocationCoord(myLocation.getLatitude());

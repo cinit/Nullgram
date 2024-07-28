@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -74,7 +93,7 @@ public class ChatGreetingsView extends LinearLayout {
 
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
         titleView.setGravity(Gravity.CENTER);
 
@@ -206,7 +225,7 @@ public class ChatGreetingsView extends LinearLayout {
                 };
                 premiumButtonView.setTextAlignment(TEXT_ALIGNMENT_CENTER);
                 premiumButtonView.setGravity(Gravity.CENTER);
-                premiumButtonView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                premiumButtonView.setTypeface(AndroidUtilities.bold());
                 premiumButtonView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 premiumButtonView.setPadding(dp(13), dp(6.66f), dp(13), dp(7));
                 premiumButtonView.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(15), 0x1e000000, 0x33000000));
@@ -259,6 +278,15 @@ public class ChatGreetingsView extends LinearLayout {
                 listener.onGreetings(sticker);
             }
         });
+    }
+
+    public void setSticker(String stickerPath) {
+        if (stickerPath == null) {
+            return;
+        }
+        wasDraw = true;
+        nextStickerToSendView.clearImage();
+        stickerToSendView.setImage(ImageLocation.getForPath(stickerPath), "256_256", null, null, 0, null);
     }
 
     public void setNextSticker(TLRPC.Document sticker, Runnable whenDone) {
@@ -533,7 +561,7 @@ public class ChatGreetingsView extends LinearLayout {
         final boolean premiumLocked = MessagesController.getInstance(currentAccount).premiumFeaturesBlocked();
 
         TextView headerView = new TextView(context);
-        headerView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+        headerView.setTypeface(AndroidUtilities.bold());
         headerView.setGravity(Gravity.CENTER);
         headerView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);

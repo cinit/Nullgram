@@ -7,13 +7,16 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.text.Spannable;
 import android.text.style.ReplacementSpan;
+import android.util.Log;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.telegram.messenger.ImageReceiver;
+import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 
 public class AvatarSpan extends ReplacementSpan {
@@ -21,22 +24,30 @@ public class AvatarSpan extends ReplacementSpan {
     private final Paint shadowPaint;
     private final ImageReceiver imageReceiver;
     private final AvatarDrawable avatarDrawable;
-    private final int sz;
+    private float sz;
     private final int currentAccount;
 
     private View parent;
 
-    public AvatarSpan(View parent, int currentAccount, int sz) {
+    public AvatarSpan(View parent, int currentAccount) {
+        this(parent, currentAccount, 18);
+    }
+
+    public AvatarSpan(View parent, int currentAccount, float sz) {
         this.currentAccount = currentAccount;
         this.imageReceiver = new ImageReceiver(parent);
         this.avatarDrawable = new AvatarDrawable();
-        imageReceiver.setRoundRadius(dp(sz));
-        this.sz = sz;
+        setSize(sz);
 
         this.shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         shadowPaint.setShadowLayer(dp(1), 0, dp(.66f), 0x33000000);
 
         setParent(parent);
+    }
+
+    public void setSize(float sz) {
+        imageReceiver.setRoundRadius(dp(sz));
+        this.sz = sz;
     }
 
     public void setParent(View parent) {
@@ -78,6 +89,14 @@ public class AvatarSpan extends ReplacementSpan {
         }
     };
 
+    public void setDialogId(long dialogId) {
+        if (dialogId >= 0) {
+            setUser(MessagesController.getInstance(currentAccount).getUser(dialogId));
+        } else {
+            setChat(MessagesController.getInstance(currentAccount).getChat(-dialogId));
+        }
+    }
+
     public void setChat(TLRPC.Chat chat) {
         avatarDrawable.setInfo(currentAccount, chat);
         imageReceiver.setForUserOrChat(chat, avatarDrawable);
@@ -88,17 +107,28 @@ public class AvatarSpan extends ReplacementSpan {
         imageReceiver.setForUserOrChat(user, avatarDrawable);
     }
 
+    public void setName(String name) {
+        avatarDrawable.setInfo(0, name, null, null, null, null);
+        imageReceiver.setForUserOrChat(null, avatarDrawable);
+    }
+
     @Override
     public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
         return dp(sz);
     }
 
     private float translateX, translateY;
+    private int shadowPaintAlpha = 0xFF;
 
     @Override
     public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+        if (shadowPaintAlpha != paint.getAlpha()) {
+            shadowPaint.setAlpha(shadowPaintAlpha = paint.getAlpha());
+            shadowPaint.setShadowLayer(dp(1), 0, dp(.66f), Theme.multAlpha(0x33000000, shadowPaintAlpha / 255f));
+        }
         canvas.drawCircle(translateX + x + dp(sz) / 2f, translateY + (top + bottom) / 2f, dp(sz) / 2f, shadowPaint);
         imageReceiver.setImageCoords(translateX + x, translateY + (top + bottom) / 2f - dp(sz) / 2f, dp(sz), dp(sz));
+        imageReceiver.setAlpha(paint.getAlpha() / 255f);
         imageReceiver.draw(canvas);
     }
 

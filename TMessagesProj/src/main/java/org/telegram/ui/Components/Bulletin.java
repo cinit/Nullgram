@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Components;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
@@ -623,6 +642,10 @@ public class Bulletin {
             return 0;
         }
 
+        default boolean bottomOffsetAnimated() {
+            return true;
+        }
+
         default int getLeftPadding() {
             return 0;
         }
@@ -871,7 +894,7 @@ public class Bulletin {
         }
 
         public float getBottomOffset() {
-            if (bulletin != null && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
+            if (bulletin != null && (delegate == null || delegate.bottomOffsetAnimated()) && bulletin.bottomOffsetSpring != null && bulletin.bottomOffsetSpring.isRunning()) {
                 return bulletin.lastBottomOffset;
             }
             return delegate.getBottomOffset(bulletin != null ? bulletin.tag : 0);
@@ -1240,7 +1263,7 @@ public class Bulletin {
             titleTextView.setSingleLine();
             titleTextView.setTextColor(undoInfoColor);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleTextView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new TextView(context);
@@ -1293,7 +1316,7 @@ public class Bulletin {
             titleTextView.setSingleLine();
             titleTextView.setTextColor(undoInfoColor);
             titleTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            titleTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleTextView.setTypeface(AndroidUtilities.bold());
             linearLayout.addView(titleTextView);
 
             subtitleTextView = new LinkSpanDrawable.LinksTextView(context);
@@ -1441,7 +1464,7 @@ public class Bulletin {
             reactionsContainerLayout.setBubbleOffset(-AndroidUtilities.dp(80));
             reactionsContainerLayout.setHint(LocaleController.getString(R.string.SavedTagReactionsHint));
             addView(reactionsContainerLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 92.5f, Gravity.CENTER_HORIZONTAL, 0, 36, 0, 0));
-            reactionsContainerLayout.setMessage(null, null);
+            reactionsContainerLayout.setMessage(null, null, true);
         }
 
         @Override
@@ -1763,7 +1786,7 @@ public class Bulletin {
                 undoTextView = new TextView(context);
                 undoTextView.setBackground(Theme.createSelectorDrawable((undoCancelColor & 0x00ffffff) | 0x19000000, Theme.RIPPLE_MASK_ROUNDRECT_6DP));
                 undoTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                undoTextView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                undoTextView.setTypeface(AndroidUtilities.bold());
                 undoTextView.setTextColor(undoCancelColor);
                 undoTextView.setText(LocaleController.getString("Undo", R.string.Undo));
                 undoTextView.setGravity(Gravity.CENTER_VERTICAL);
@@ -1881,7 +1904,7 @@ public class Bulletin {
 
             textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
             textPaint.setTextSize(AndroidUtilities.dp(12));
-            textPaint.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            textPaint.setTypeface(AndroidUtilities.bold());
             textPaint.setColor(Theme.getColor(Theme.key_undo_infoColor, resourcesProvider));
 
             progressPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -2037,6 +2060,12 @@ public class Bulletin {
                 window.setAttributes(params);
                 AndroidUtilities.setLightNavigationBar(window, AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_windowBackgroundGray)) > 0.721f);
             } catch (Exception ignore) {}
+        }
+
+        @Override
+        public void show() {
+            if (!AndroidUtilities.isSafeToShow(getContext())) return;
+            super.show();
         }
 
         @RequiresApi(api = Build.VERSION_CODES.KITKAT_WATCH)

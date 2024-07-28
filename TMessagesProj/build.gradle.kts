@@ -13,6 +13,7 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
     alias(libs.plugins.google.services)
     alias(libs.plugins.triplet.play)
+    alias(libs.plugins.aboutlibraries)
     alias(libs.plugins.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.rust)
@@ -68,13 +69,11 @@ dependencies {
     compileOnly(libs.checker.compat.qual)
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.config)
-    implementation(libs.firebase.datatransport)
-    implementation(libs.firebase.appindexing)
     implementation(libs.play.services.vision)
     implementation(libs.play.services.location)
     implementation(libs.play.services.wallet)
     implementation(libs.play.services.mlkit.vision)
-//    implementation("com.google.android.gms:play-services-safetynet:18.0.1")
+    implementation(libs.play.services.mlkit.imageLabeling)
     implementation(libs.isoparser)
     implementation(files("libs/stripe.aar"))
     implementation(libs.language.id)
@@ -82,9 +81,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.gson)
     implementation(libs.process.phoenix)
-    implementation(libs.licensesdialog)
-    implementation(libs.markwon.core)
     implementation(libs.hiddenapibypass)
+    implementation(libs.lottie)
 
     implementation(libs.kotlin.stdlib.common)
     implementation(libs.kotlin.stdlib)
@@ -164,7 +162,6 @@ android {
             proguardFiles(File(projectDir, "proguard-rules.pro"))
 
             the<CrashlyticsExtension>().nativeSymbolUploadEnabled = true
-            the<CrashlyticsExtension>().mappingFileUploadEnabled = true
         }
 
         getByName("debug") {
@@ -180,6 +177,10 @@ android {
         create("play") {
             initWith(getByName("release"))
         }
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     defaultConfig {
@@ -204,7 +205,7 @@ android {
 
     androidComponents {
         onVariants { variant ->
-            variant.buildConfigFields.put("isPlay", BuildConfigField("boolean", variant.name == "play", null))
+            variant.buildConfigFields.put("isPlay", BuildConfigField("boolean", variant.name.lowercase() == "play", null))
         }
     }
 

@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Stories;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -38,6 +57,12 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
     public boolean onlyUnreadStories;
     public boolean onlySelfStories;
     public boolean hasPaginationParams;
+    public int addBottomClip;
+
+    public StoriesListPlaceProvider addBottomClip(int x) {
+        addBottomClip += x;
+        return this;
+    }
 
 
     public static StoriesListPlaceProvider of(RecyclerListView recyclerListView) {
@@ -194,6 +219,11 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
                     holder.drawAbove = (canvas, bounds, alpha, opening) -> {
                         cell.drawDuration(canvas, bounds, alpha);
                         cell.drawViews(canvas, bounds, alpha);
+                        if (cell.isSearchingHashtag) {
+                            cell.drawAuthor(canvas, bounds, alpha);
+                        } else {
+                            cell.drawPrivacy(canvas, bounds, alpha);
+                        }
                         if (fastScroll != null && fastScroll.isVisible && fastScroll.getVisibility() == View.VISIBLE) {
                             canvas.saveLayerAlpha(0, 0, canvas.getWidth(), canvas.getHeight(), (int) (0xFF * alpha), Canvas.ALL_SAVE_FLAG);
                             canvas.translate(loc[0], loc[1]);
@@ -291,13 +321,13 @@ public class StoriesListPlaceProvider implements StoryViewer.PlaceProvider {
         if (holder.clipParent instanceof ClippedView) {
             ((ClippedView) holder.clipParent).updateClip(clipPoint);
             holder.clipTop = clipPoint[0];
-            holder.clipBottom = clipPoint[1];
+            holder.clipBottom = clipPoint[1] - addBottomClip;
         } else if (holder.clipParent instanceof BlurredRecyclerView) {
             holder.clipTop = ((BlurredRecyclerView) holder.clipParent).blurTopPadding;
-            holder.clipBottom = holder.clipParent.getMeasuredHeight() - holder.clipParent.getPaddingBottom();
+            holder.clipBottom = holder.clipParent.getMeasuredHeight() - holder.clipParent.getPaddingBottom() - addBottomClip;
         } else {
             holder.clipTop = holder.clipParent.getPaddingTop();
-            holder.clipBottom = holder.clipParent.getMeasuredHeight() - holder.clipParent.getPaddingBottom();
+            holder.clipBottom = holder.clipParent.getMeasuredHeight() - holder.clipParent.getPaddingBottom() - addBottomClip;
         }
     }
 

@@ -1,5 +1,25 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Cells;
 
+import static org.telegram.messenger.AndroidUtilities.decelerateInterpolator;
 import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.content.Context;
@@ -89,14 +109,15 @@ public class EditTextCell extends FrameLayout {
     }
 
     public EditTextCell(Context context, String hint, boolean multiline) {
-        this(context, hint, multiline, -1);
+        this(context, hint, multiline, -1, null);
     }
 
     public EditTextCell(
         Context context,
         String hint,
         boolean multiline,
-        int maxLength
+        int maxLength,
+        Theme.ResourcesProvider resourceProvider
     ) {
         super(context);
         this.maxLength = maxLength;
@@ -119,7 +140,7 @@ public class EditTextCell extends FrameLayout {
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 super.dispatchDraw(canvas);
-                limit.setTextColor(limitColor.set(Theme.getColor(limitCount <= 0 ? Theme.key_text_RedRegular : Theme.key_dialogSearchHint, getResourcesProvider())));
+                limit.setTextColor(limitColor.set(Theme.getColor(limitCount <= 0 ? Theme.key_text_RedRegular : Theme.key_dialogSearchHint, resourceProvider)));
                 limit.setBounds(getScrollX(), 0, getScrollX() + getWidth() - getPaddingRight() + dp(42), getHeight());
                 limit.draw(canvas);
             }
@@ -134,8 +155,8 @@ public class EditTextCell extends FrameLayout {
         };
         limit.setCallback(editText);
         editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
-        editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText, resourceProvider));
+        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
         editText.setBackground(null);
         if (multiline) {
             editText.setMaxLines(5);
@@ -146,10 +167,10 @@ public class EditTextCell extends FrameLayout {
         }
         editText.setPadding(dp(21), dp(15), dp((maxLength > 0 ? 42 : 0) + 21), dp(15));
         editText.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
-        editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0) | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
-        editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT);
+        editText.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | (multiline ? InputType.TYPE_TEXT_FLAG_MULTI_LINE : 0) | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        editText.setRawInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES | InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         editText.setHint(hint);
-        editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
         editText.setCursorSize(dp(19));
         editText.setCursorWidth(1.5f);
         editText.addTextChangedListener(new TextWatcher() {
@@ -164,7 +185,20 @@ public class EditTextCell extends FrameLayout {
             @Override
             public void afterTextChanged(Editable editable) {
                 if (!ignoreEditText) {
+                    if (maxLength > 0 && editable != null && editable.length() > maxLength) {
+                        ignoreEditText = true;
+                        editText.setText(editable.subSequence(0, maxLength));
+                        editText.setSelection(editText.length());
+                        ignoreEditText = false;
+                    }
                     EditTextCell.this.onTextChanged(editable);
+                }
+
+                if (multiline) {
+                    int pos;
+                    while ((pos = editable.toString().indexOf("\n")) >= 0) {
+                        editable.delete(pos, pos + 1);
+                    }
                 }
             }
         });
@@ -178,26 +212,6 @@ public class EditTextCell extends FrameLayout {
                 onFocusChanged(hasFocus);
             }
         });
-        ArrayList<InputFilter> filters = new ArrayList<>();
-        if (multiline) {
-            filters.add(new InputFilter() {
-                @Override
-                public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
-                    if (source != null) {
-                        String s = source.toString();
-                        if (s.contains("\n")) {
-                            s = s.replaceAll("\n", "");
-                        }
-                        return s;
-                    }
-                    return null;
-                }
-            });
-        }
-        if (maxLength > 0) {
-            filters.add(new InputFilter.LengthFilter(maxLength));
-        }
-        editText.setFilters(filters.toArray(new InputFilter[0]));
         addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP));
 
         updateLimitText();

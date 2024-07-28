@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 
@@ -26,6 +37,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -33,7 +45,7 @@ import org.telegram.ui.Components.LayoutHelper;
 
 public class AccountSelectCell extends FrameLayout {
 
-    private TextView textView;
+    private SimpleTextView textView;
     private TextView infoTextView;
     private BackupImageView imageView;
     private ImageView checkImageView;
@@ -51,14 +63,12 @@ public class AccountSelectCell extends FrameLayout {
         imageView.setRoundRadius(AndroidUtilities.dp(18));
         addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 10, 10, 0, 0));
 
-        textView = new TextView(context);
-        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        textView.setLines(1);
+        textView = new SimpleTextView(context);
+        textView.setTextSize(15);
+        textView.setTypeface(AndroidUtilities.bold());
+        textView.setEllipsizeByGradient(true);
         textView.setMaxLines(1);
-        textView.setSingleLine(true);
         textView.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
-        textView.setEllipsize(TextUtils.TruncateAt.END);
 
         if (hasInfo) {
             addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 61, 7, 8, 0));
@@ -76,7 +86,7 @@ public class AccountSelectCell extends FrameLayout {
             infoTextView.setEllipsize(TextUtils.TruncateAt.END);
             addView(infoTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 61, 27, 8, 0));
         } else {
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 61, 0, 56, 0));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 61, 0, 52, 0));
             textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem));
 
             checkImageView = new ImageView(context);
@@ -113,7 +123,7 @@ public class AccountSelectCell extends FrameLayout {
         } else {
             TLRPC.Chat chat = (TLRPC.Chat) object;
             avatarDrawable.setInfo(chat);
-            infoTextView.setText(chat.title);
+            infoTextView.setText(chat == null ? "" : chat.title);
             imageView.setForUserOrChat(chat, avatarDrawable);
         }
     }

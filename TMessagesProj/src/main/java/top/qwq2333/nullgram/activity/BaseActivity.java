@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 qwq233 <qwq233@qwq2333.top>
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
  * https://github.com/qwq233/Nullgram
  *
  * This program is free software; you can redistribute it and/or
@@ -326,7 +326,7 @@ public abstract class BaseActivity extends BaseFragment {
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
                 case TYPE_ACCOUNT:
-                    view = new PasscodeSettingActivity.AccountCell(mContext);
+                    view = new PasscodeSettingActivity.AccountCell(mContext, resourcesProvider);
                     view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
                     break;
             }
@@ -344,7 +344,7 @@ public abstract class BaseActivity extends BaseFragment {
         }
 
         @Override
-        protected void drawList(Canvas blurCanvas, boolean top) {
+        protected void drawList(Canvas blurCanvas, boolean top, ArrayList<IViewWithInvalidateCallback> views) {
             for (int j = 0; j < listView.getChildCount(); j++) {
                 View child = listView.getChildAt(j);
                 if (child.getY() < listView.blurTopPadding + AndroidUtilities.dp(100)) {

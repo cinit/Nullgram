@@ -1,9 +1,20 @@
 /*
- * This is the source code of Telegram for Android v. 5.x.x.
- * It is licensed under GNU GPL v. 2 or later.
- * You should have received a copy of the license in this archive (see LICENSE).
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
  *
- * Copyright Nikolai Kudashov, 2013-2018.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
  */
 
 package org.telegram.ui.ActionBar;
@@ -13,6 +24,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -72,8 +84,9 @@ public class BottomSheet extends Dialog {
 
     protected int currentAccount = UserConfig.selectedAccount;
     protected ViewGroup containerView;
-    protected ContainerView container;
+    public ContainerView container;
     protected boolean keyboardVisible;
+    private int lastKeyboardHeight;
     protected int keyboardHeight;
     private WindowInsets lastInsets;
     public boolean drawNavigationBar;
@@ -189,6 +202,7 @@ public class BottomSheet extends Dialog {
 
     private ValueAnimator keyboardContentAnimator;
     public boolean smoothKeyboardAnimationEnabled;
+    public boolean smoothKeyboardByBottom;
     private boolean openNoDelay;
 
     private float hideSystemVerticalInsetsProgress;
@@ -501,6 +515,8 @@ public class BottomSheet extends Dialog {
                 keyboardHeight = Math.max(0, usableViewHeight - (rect.bottom - rect.top));
                 if (keyboardHeight < AndroidUtilities.dp(20)) {
                     keyboardHeight = 0;
+                } else {
+                    lastKeyboardHeight = keyboardHeight;
                 }
                 bottomInset -= keyboardHeight;
             } else {
@@ -583,25 +599,29 @@ public class BottomSheet extends Dialog {
                 if (lastInsets != null && Build.VERSION.SDK_INT >= 21) {
                     l += getLeftInset();
                 }
-                if (smoothKeyboardAnimationEnabled && startAnimationRunnable == null && keyboardChanged && !dismissed && containerView.getTop() != t) {
-                    containerView.setTranslationY(containerView.getTop() - t);
+                if (smoothKeyboardAnimationEnabled && startAnimationRunnable == null && keyboardChanged && !dismissed && (smoothKeyboardByBottom ? containerView.getBottom() != t + containerView.getMeasuredHeight() : containerView.getTop() != t) || smoothContainerViewLayoutUntil > 0 && System.currentTimeMillis() < smoothContainerViewLayoutUntil) {
+                    containerView.setTranslationY(smoothKeyboardByBottom ? containerView.getBottom() - (t + containerView.getMeasuredHeight()) : containerView.getTop() - t);
+                    onSmoothContainerViewLayout(containerView.getTranslationY());
                     if (keyboardContentAnimator != null) {
                         keyboardContentAnimator.cancel();
                     }
                     keyboardContentAnimator = ValueAnimator.ofFloat(containerView.getTranslationY(), 0);
                     keyboardContentAnimator.addUpdateListener(valueAnimator -> {
                         containerView.setTranslationY((Float) valueAnimator.getAnimatedValue());
+                        onSmoothContainerViewLayout(containerView.getTranslationY());
                         invalidate();
                     });
                     keyboardContentAnimator.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
                             containerView.setTranslationY(0);
+                            onSmoothContainerViewLayout(containerView.getTranslationY());
                             invalidate();
                         }
                     });
                     keyboardContentAnimator.setDuration(AdjustPanLayoutHelper.keyboardDuration).setInterpolator(AdjustPanLayoutHelper.keyboardInterpolator);
                     keyboardContentAnimator.start();
+                    smoothContainerViewLayoutUntil = -1;
                 }
                 containerView.layout(l, t, l + containerView.getMeasuredWidth(), t + containerView.getMeasuredHeight());
             }
@@ -928,13 +948,13 @@ public class BottomSheet extends Dialog {
                 textView.setGravity(Gravity.CENTER);
                 textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                textView.setTypeface(AndroidUtilities.bold());
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
             } else if (type == 2) {
                 textView.setGravity(Gravity.CENTER);
                 textView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-                textView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                textView.setTypeface(AndroidUtilities.bold());
                 textView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, 16, 16, 16));
             }
@@ -1173,6 +1193,9 @@ public class BottomSheet extends Dialog {
                 @Override
                 public void setTranslationY(float translationY) {
                     super.setTranslationY(translationY);
+                    if (topBulletinContainer != null) {
+                        topBulletinContainer.setTranslationY(-getHeight() + translationY - getPaddingTop() - AndroidUtilities.statusBarHeight + backgroundPaddingTop);
+                    }
                     onContainerTranslationYChanged(translationY);
                 }
             };
@@ -1181,6 +1204,11 @@ public class BottomSheet extends Dialog {
         }
         containerView.setVisibility(View.INVISIBLE);
         container.addView(containerView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+
+        if (topBulletinContainer == null) {
+            topBulletinContainer = new FrameLayout(getContext());
+            container.addView(topBulletinContainer, container.indexOfChild(containerView) + 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+        }
 
         int topOffset = 0;
         if (title != null) {
@@ -1209,7 +1237,7 @@ public class BottomSheet extends Dialog {
             if (bigTitle) {
                 titleView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
                 titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
-                titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                titleView.setTypeface(AndroidUtilities.bold());
                 titleView.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(multipleLinesTitle ? 14 : 6), AndroidUtilities.dp(21), AndroidUtilities.dp(8));
             } else {
                 titleView.setTextColor(getThemedColor(Theme.key_dialogTextGray2));
@@ -1340,6 +1368,7 @@ public class BottomSheet extends Dialog {
 
     @Override
     public void show() {
+        if (!AndroidUtilities.isSafeToShow(getContext())) return;
         super.show();
         setShowing(true);
         if (focusable) {
@@ -1715,6 +1744,11 @@ public class BottomSheet extends Dialog {
         return false;
     }
 
+    private boolean forceKeyboardOnDismiss;
+    public void forceKeyboardOnDismiss() {
+        forceKeyboardOnDismiss = true;
+    }
+
     @Override
     public void dismiss() {
         if (delegate != null && !delegate.canDismiss()) {
@@ -1758,7 +1792,7 @@ public class BottomSheet extends Dialog {
                         animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_X, AndroidUtilities.dp(48)));
                         animators.add(ObjectAnimator.ofFloat(containerView, View.ALPHA, 0));
                     } else {
-                        animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + keyboardHeight + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
+                        animators.add(ObjectAnimator.ofFloat(containerView, View.TRANSLATION_Y, getContainerViewHeight() + (forceKeyboardOnDismiss ? lastKeyboardHeight : keyboardHeight) + AndroidUtilities.dp(10) + (scrollNavBar ? getBottomInset() : 0)));
                     }
                 }
                 animators.add(ObjectAnimator.ofInt(backDrawable, AnimationProperties.COLOR_DRAWABLE_ALPHA, 0));
@@ -2091,5 +2125,14 @@ public class BottomSheet extends Dialog {
     public void setImageReceiverNumLevel(int playingImages, int onShowing) {
         this.playingImagesLayerNum = playingImages;
         this.openedLayerNum = onShowing;
+    }
+
+    private long smoothContainerViewLayoutUntil = -1;
+    public void smoothContainerViewLayout() {
+        smoothContainerViewLayoutUntil = System.currentTimeMillis() + 80;
+    }
+
+    protected void onSmoothContainerViewLayout(float ty) {
+
     }
 }

@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this software.
+ *  If not, see
+ * <https://www.gnu.org/licenses/>
+ */
+
 package org.telegram.ui.Components;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -416,7 +435,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 copyButton.setPadding(AndroidUtilities.dp(26), 0, AndroidUtilities.dp(26), 0);
                 copyButton.setText(LocaleController.getString("Copy", R.string.Copy));
                 copyButton.getTextView().setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.4f);
-                copyButton.getTextView().setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                copyButton.getTextView().setTypeface(AndroidUtilities.bold());
                 copyButton.setOnClickListener(e -> {
                     if (popupWindow == null) {
                         return;
@@ -501,7 +520,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         addButtonView.setVisibility(View.GONE);
         addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
         addButtonView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
-        addButtonView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        addButtonView.setTypeface(AndroidUtilities.bold());
         addButtonView.setGravity(Gravity.CENTER);
         buttonsView.addView(addButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM, 12, 10, 12, 10));
 
@@ -509,7 +528,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
         removeButtonView.setVisibility(View.GONE);
         removeButtonView.setBackground(Theme.createRadSelectorDrawable(0x0fffffff & getThemedColor(Theme.key_text_RedBold), 0, 0));
         removeButtonView.setTextColor(getThemedColor(Theme.key_text_RedBold));
-        removeButtonView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+        removeButtonView.setTypeface(AndroidUtilities.bold());
         removeButtonView.setGravity(Gravity.CENTER);
         removeButtonView.setClickable(true);
         buttonsView.addView(removeButtonView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.BOTTOM, 0, 0, 0, 19));
@@ -639,7 +658,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                         if (drawable == null) {
                             continue;
                         }
-                        drawable.setColorFilter(getAdaptiveEmojiColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon)));
+                        drawable.setColorFilter(getAdaptiveEmojiColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText)));
 //                            drawable.addView(this);
                         ArrayList<EmojiImageView> arrayList = viewsGroupedByLines.get(child.getTop());
                         if (arrayList == null) {
@@ -773,7 +792,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                     drawable.setAlpha(255);
                     AndroidUtilities.rectTmp2.set(imageView.getLeft() + imageView.getPaddingLeft(),  imageView.getPaddingTop(), imageView.getRight() - imageView.getPaddingRight(), imageView.getMeasuredHeight() - imageView.getPaddingBottom());
                     imageView.backgroundThreadDrawHolder[threadIndex].setBounds(AndroidUtilities.rectTmp2);
-                    drawable.setColorFilter(getAdaptiveEmojiColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlueIcon)));
+                    drawable.setColorFilter(getAdaptiveEmojiColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText)));
                     imageView.imageReceiver = drawable.getImageReceiver();;
                     drawInBackgroundViews.add(imageView);
                 }
@@ -1582,7 +1601,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 }
 
                 addButtonView = new TextView(context);
-                addButtonView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                addButtonView.setTypeface(AndroidUtilities.bold());
                 addButtonView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
                 addButtonView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 4));
                 addButtonView.setText(LocaleController.getString("Add", R.string.Add));
@@ -1598,7 +1617,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                 endMarginDp = Math.max(endMarginDp, (addButtonView.getMeasuredWidth() + AndroidUtilities.dp(8 + 8)) / AndroidUtilities.density);
 
                 removeButtonView = new TextView(context);
-                removeButtonView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                removeButtonView.setTypeface(AndroidUtilities.bold());
                 removeButtonView.setTextColor(getThemedColor(Theme.key_featuredStickers_addButton));
                 removeButtonView.setBackground(Theme.createRadSelectorDrawable(0x0fffffff & getThemedColor(Theme.key_featuredStickers_addButton), 4, 4));
                 removeButtonView.setText(LocaleController.getString("StickersRemove", R.string.StickersRemove));
@@ -1625,7 +1644,7 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
 
             titleView = new LinkSpanDrawable.LinksTextView(context, resourcesProvider);
             titleView.setPadding(AndroidUtilities.dp(2), 0, AndroidUtilities.dp(2), 0);
-            titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            titleView.setTypeface(AndroidUtilities.bold());
             titleView.setEllipsize(TextUtils.TruncateAt.END);
             titleView.setSingleLine(true);
             titleView.setLines(1);

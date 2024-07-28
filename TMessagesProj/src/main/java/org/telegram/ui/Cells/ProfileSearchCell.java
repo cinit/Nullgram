@@ -390,9 +390,9 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         } else {
             String nameString2 = "";
             if (chat != null) {
-                nameString2 = chat.title;
+                nameString2 = AndroidUtilities.removeDiacritics(chat.title);
             } else if (user != null) {
-                nameString2 = UserObject.getUserName(user);
+                nameString2 = AndroidUtilities.removeDiacritics(UserObject.getUserName(user));
             }
             nameString = nameString2.replace('\n', ' ');
         }
@@ -406,7 +406,7 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
         if (customPaints) {
             if (namePaint == null) {
                 namePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                namePaint.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+                namePaint.setTypeface(AndroidUtilities.bold());
             }
             namePaint.setTextSize(AndroidUtilities.dp(16));
             if (encryptedChat != null) {
