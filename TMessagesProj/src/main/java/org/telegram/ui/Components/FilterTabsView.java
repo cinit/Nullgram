@@ -130,6 +130,9 @@ public class FilterTabsView extends FrameLayout {
         public boolean isLocked;
 
         public Tab(int i, String t, String e) {
+            if (t == null) {
+                t = "";
+            }
             id = i;
             title = Config.getTabMenu() != Defines.tabMenuIcon ? t : "";
             realTitle = t;
@@ -162,12 +165,11 @@ public class FilterTabsView extends FrameLayout {
         }
 
         public boolean setTitle(String newTitle) {
-            newTitle = Config.getTabMenu() != Defines.tabMenuIcon ? newTitle : "";
             realTitle = newTitle;
-            if (TextUtils.equals(title, newTitle)) {
+            if (TextUtils.equals(realTitle, newTitle)) {
                 return false;
             }
-            title = newTitle;
+            title = Config.getTabMenu() != Defines.tabMenuIcon ? newTitle : "";
             return true;
         }
     }

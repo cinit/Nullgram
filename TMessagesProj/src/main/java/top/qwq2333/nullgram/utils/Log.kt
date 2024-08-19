@@ -20,12 +20,15 @@
 package top.qwq2333.nullgram.utils
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.telegram.messenger.AndroidUtilities
+import org.telegram.messenger.BuildConfig
+import org.telegram.messenger.UserConfig
 import org.telegram.ui.LaunchActivity
 import java.io.File
 import java.nio.charset.Charset
@@ -35,12 +38,35 @@ import java.util.Locale
 
 object Log {
     const val TAG = "Nullgram"
-    private lateinit var logFile: File
+    private val logFile: File by lazy {
+        File(AndroidUtilities.getLogsDir(), "log-${SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())}.txt").also { f ->
+            if (!f.exists()) {
+                f.createNewFile()
+                f.init()
+            }
+        }
+    }
 
-    val enable_rc_log = false
+    private fun File.init() {
+        appendText("Current version: ${BuildConfig.VERSION_NAME}\n")
+        appendText("Device Brand: ${Build.BRAND}\n")
+        appendText("Device: ${Build.MODEL}\n")
+        appendText("Manufacturer: ${Build.MANUFACTURER}\n")
+        appendText("OS: ${Build.VERSION.SDK_INT}\n")
+        appendText("isPlay: ${BuildConfig.isPlay}\n")
+        appendText("ABI: ${Utils.abi}\n")
+        for (i in 0 until  UserConfig.MAX_ACCOUNT_COUNT) {
+            UserConfig.getInstance(i)?.let {
+                if (!it.isClientActivated) return@let
+                appendText("User $i: ${it.getClientUserId()}\n")
+            }
+        }
+    }
+
+    private const val ENABLE_RC_LOG = false
 
     enum class Level {
-        DEBUG, INFO, WARN, ERROR
+        DEBUG, INFO, WARN, ERROR, FATAL
     }
 
     init {
@@ -54,18 +80,15 @@ object Log {
                     }
                 }
             }
+            logFile.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
+            logFile.appendText("Current version: ${BuildConfig.VERSION_NAME}\n")
 
-            logFile = File(parentFile, "log-${SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())}.txt").also {
-                if (!it.exists()) {
-                    it.createNewFile()
-                }
-                it.setWritable(true)
-                it.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
-            }
+
         }.onFailure {
             if (it is Exception && AndroidUtilities.isENOSPC(it)) {
                 LaunchActivity.checkFreeDiscSpaceStatic(1)
             }
+            Log.e(TAG, "Logger crashes", it)
         }
     }
 
@@ -76,7 +99,10 @@ object Log {
                     if (!exists()) {
                         createNewFile()
                         setWritable(true)
+                        init()
                         appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
+                        appendText("Current version: ${BuildConfig.VERSION_NAME}\n")
+
                     }
                     if (readAttributes().size() > 1024 * 1024 * 10) { // 10MB
                         refreshLog()
@@ -99,10 +125,12 @@ object Log {
     fun refreshLog() {
         synchronized(logFile) {
             runCatching {
-                logFile.let {
-                    it.delete()
-                    it.createNewFile()
-                    it.appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
+                logFile.apply {
+                    delete()
+                    createNewFile()
+                    init()
+                    appendText(">>>> Log start at ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(Date())}\n", Charset.forName("UTF-8"))
+                    appendText("Current version: ${BuildConfig.VERSION_NAME}\n")
                 }
             }
         }
@@ -114,7 +142,7 @@ object Log {
      */
     @JvmStatic
     fun d(tag: String, msg: String) {
-        if (msg.contains("{rc}") && !enable_rc_log) return
+        if (msg.contains("{rc}") && !ENABLE_RC_LOG) return
         Log.d(TAG, "$tag: $msg")
         writeToFile(Level.DEBUG, tag, msg)
     }
@@ -159,7 +187,7 @@ object Log {
     @JvmStatic
     @JvmOverloads
     fun d(msg: String, throwable: Throwable? = null) {
-        if (msg.contains("{rc}") && !enable_rc_log) return
+        if (msg.contains("{rc}") && !ENABLE_RC_LOG) return
         Log.d(TAG, msg, throwable)
         writeToFile(Level.DEBUG, null, msg)
         if (throwable != null) writeToFile(Level.DEBUG, null, throwable.stackTraceToString())
@@ -201,8 +229,16 @@ object Log {
     fun e(msg: String, throwable: Throwable? = null) {
         Log.e(TAG, msg, throwable)
         writeToFile(Level.ERROR, null, msg)
-        if (throwable != null) writeToFile(Level.ERROR, null, throwable.stackTraceToString())
         if (throwable != null) {
+            writeToFile(Level.ERROR, null, throwable.stackTraceToString())
+            AnalyticsUtils.trackCrashes(throwable)
+        }
+    }
+
+    @JvmStatic
+    fun fatal(throwable: Throwable?) {
+        if (throwable != null) {
+            writeToFile(Level.FATAL, null, throwable.stackTraceToString())
             AnalyticsUtils.trackCrashes(throwable)
         }
     }
@@ -262,11 +298,19 @@ object Log {
     @JvmStatic
     fun nativeLog(level: Int, tag: String, msg: String) {
         if (!ENABLE_NATIVE_LOG) return
+        if (tag == "Nullgram") {
+            when(level) {
+                0 -> d("tgnet", msg)
+                1 -> i("tgnet", msg)
+                2 -> w("tgnet", msg)
+                3 -> e("tgnet", msg)
+            }
+        }
         when(level) {
-            0 -> Log.d("tgnet", msg)
-            1 -> Log.i("tgnet", msg)
-            2 -> Log.w("tgnet", msg)
-            3 -> Log.e("tgnet", msg)
+            0 -> Log.d("tgnet", "$tag: $msg")
+            1 -> Log.i("tgnet", "$tag: $msg")
+            2 -> Log.w("tgnet", "$tag: $msg")
+            3 -> Log.e("tgnet", "$tag: $msg")
         }
     }
 }

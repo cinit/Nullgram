@@ -60,7 +60,7 @@ add_library(libvpx STATIC IMPORTED)
 set_target_properties(libvpx PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a)
 
 #add_library(rust STATIC IMPORTED)
-#set_target_properties(rust PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/integrity/${ANDROID_ABI}/librust.a.13)
+#set_target_properties(rust PROPERTIES IMPORTED_LOCATION ${CMAKE_HOME_DIRECTORY}/integrity/${ANDROID_ABI}/librust.a.21)
 
 #tgnet
 add_library(tgnet STATIC
@@ -155,6 +155,7 @@ elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
             rlottie/src/vector/pixman/pixman-arma64-neon-asm.S)
 endif()
 
+
 #flac
 add_library(flac STATIC
         exoplayer/libFLAC/bitmath.c
@@ -231,7 +232,8 @@ add_library(${NATIVE_LIB} SHARED
         exoplayer/ffmpeg_jni.cc
         fast-edge.cpp
         genann.c
-        secureid_ocr.cpp)
+        secureid_ocr.cpp
+)
 
 target_compile_options(${NATIVE_LIB} PUBLIC
         -ffast-math -Os -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)

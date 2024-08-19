@@ -24,8 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: 'recursive'
           fetch-depth: 0
+      - name: Check out submodules
+        run: |
+          git -c submodule."libs/rust".update=none submodule update --init --recursive
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v1.12
         with:
@@ -66,12 +68,14 @@ jobs:
             df -h
             
             sudo apt-get install bison gcc make curl ninja-build ccache -y
-            echo "y" | sdkmanager --install "ndk;26.3.11579264" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+            echo "y" | sdkmanager --install "ndk;27.0.12077973" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
             echo "sdk.dir=${ANDROID_HOME}" >> local.properties
       - name: Debug Build
         run: |
           sed '/signingConfig =/d' TMessagesProj/build.gradle.kts > TMessagesProj/build.gradle.kts.tmp
-          cp TMessagesProj/build.gradle.kts.tmp TMessagesProj/build.gradle.kts
+          sed '/google.services/d' TMessagesProj/build.gradle.kts.tmp > TMessagesProj/build.gradle.kts
+          sed '/google.services/d' build.gradle.kts.tmp > build.gradle.kts
+          cp build.gradle.kts.tmp build.gradle.kts
           ./gradlew TMessagesProj:assembleDebug
         
 

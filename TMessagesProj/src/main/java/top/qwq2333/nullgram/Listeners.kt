@@ -62,6 +62,7 @@ class SaveToDownloadReceiver : BroadcastReceiver() {
         private val notificationManager by lazy {
             NotificationManagerCompat.from(ApplicationLoader.applicationContext)
         }
+
         @JvmStatic
         var id = 0
             get() = field++
@@ -120,4 +121,24 @@ class SaveToDownloadReceiver : BroadcastReceiver() {
             }
         }
     }
+}
+
+object CrashListener : Thread.UncaughtExceptionHandler {
+    private var uncaughtExceptionHandler: Thread.UncaughtExceptionHandler? = null
+    fun init() {
+        Log.i("CrashListener", "${uncaughtExceptionHandler?.javaClass?.name}")
+        if (Thread.getDefaultUncaughtExceptionHandler() == null ||
+            Thread.getDefaultUncaughtExceptionHandler()?.javaClass?.name != this.javaClass.name
+        ) {
+            uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
+            Thread.setDefaultUncaughtExceptionHandler(this)
+        }
+        Log.i("CrashListener", "${Thread.getDefaultUncaughtExceptionHandler()?.javaClass?.name}")
+    }
+
+    override fun uncaughtException(t: Thread, e: Throwable) {
+        uncaughtExceptionHandler?.uncaughtException(t, e)
+        Log.fatal(e)
+    }
+
 }
