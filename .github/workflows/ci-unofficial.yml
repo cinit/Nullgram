@@ -66,7 +66,7 @@ jobs:
                     sudo rm -rf /usr/local/lib/node_modules
                     df -h
                     sudo apt-get install bison gcc make curl ninja-build -y
-                    echo "y" | sdkmanager --install "ndk;26.3.11579264" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+                    echo "y" | sdkmanager --install "ndk;27.0.12077973" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
                     echo "sdk.dir=${ANDROID_HOME}" >> local.properties
             -   name: Debug Build
                 run: |
@@ -77,12 +77,12 @@ jobs:
                     echo "APK_FILE_ARM64=$(find TMessagesProj/build/outputs/apk -name '*arm64*.apk')" >> $GITHUB_ENV
                     echo "APK_FILE_X64=$(find TMessagesProj/build/outputs/apk -name '*x86_64*.apk')" >> $GITHUB_ENV
 
-            -   uses: actions/upload-artifact@v2
+            -   uses: actions/upload-artifact@v3
                 name: Upload apk (arm64-v8a)
                 with:
                     name: Nullgram-arm64-v8a-debug
                     path: ${{ env.APK_FILE_ARM64 }}
-            -   uses: actions/upload-artifact@v2
+            -   uses: actions/upload-artifact@v3
                 name: Upload apk (x86_64)
                 with:
                     name: Nullgram-x86_64-debug
