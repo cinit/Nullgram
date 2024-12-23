@@ -66,6 +66,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
+import org.telegram.ui.Stars.StarsIntroActivity;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -92,7 +93,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
         headerPaddingTop = dp(4);
         headerPaddingBottom = dp(-15);
 
-        urlEditText = new EditTextCell(context, getString(R.string.StoryLinkURLPlaceholder), true, -1, resourcesProvider);
+        urlEditText = new EditTextCell(context, getString(R.string.StoryLinkURLPlaceholder), true, false, -1, resourcesProvider);
         urlEditText.whenHitEnter(this::processDone);
 
         String def = "https://";
@@ -175,7 +176,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
             }
         });
 
-        nameEditText = new EditTextCell(context, getString(R.string.StoryLinkNamePlaceholder), true, -1, resourcesProvider);
+        nameEditText = new EditTextCell(context, getString(R.string.StoryLinkNamePlaceholder), true, false, -1, resourcesProvider);
         nameEditText.whenHitEnter(this::processDone);
 
         buttonContainer = new FrameLayout(context);
@@ -540,6 +541,7 @@ public class StoryLinkSheet extends BottomSheetWithRecyclerListView implements N
         }
 
         public static class Factory extends UItem.UItemFactory<WebpagePreviewView> {
+            static { setup(new Factory()); }
             @Override
             public WebpagePreviewView createView(Context context, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
                 return new WebpagePreviewView(context);

@@ -190,6 +190,11 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         return false;
     }
 
+    @Override
+    public boolean hadDialog() {
+        return false;
+    }
+
     public BottomSheetTabs.WebTabData saveState() {
         preserving = true;
         BottomSheetTabs.WebTabData tab = new BottomSheetTabs.WebTabData();
@@ -240,7 +245,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         if (tab.webView != null) {
 //            tab.webView.resumeTimers();
             tab.webView.onResume();
-            webViewContainer.replaceWebView(tab.webView, tab.proxy);
+            webViewContainer.replaceWebView(currentAccount, tab.webView, tab.proxy);
         } else {
             tab.props.response = null;
             tab.props.responseTime = 0;
@@ -297,8 +302,9 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
         webViewContainer = new BotWebViewContainer(context, parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite), true) {
             @Override
-            public void onWebViewCreated() {
-                swipeContainer.setWebView(webViewContainer.getWebView());
+            public void onWebViewCreated(MyWebView webView) {
+                super.onWebViewCreated(webView);
+                swipeContainer.setWebView(webView);
             }
         };
         webViewContainer.setDelegate(webViewDelegate = new BotWebViewContainer.Delegate() {
@@ -387,7 +393,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
                     args.putBoolean("allowBots", chatTypes.contains("bots"));
 
                     DialogsActivity dialogsActivity = new DialogsActivity(args);
-                    dialogsActivity.setDelegate((fragment, dids, message1, param, topicsFragment) -> {
+                    dialogsActivity.setDelegate((fragment, dids, message1, param, notify, scheduleDate, topicsFragment) -> {
                         long did = dids.get(0).dialogId;
 
                         Bundle args1 = new Bundle();
@@ -438,8 +444,13 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
             }
 
             @Override
-            public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible) {
+            public void onSetupMainButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect) {
                 setMainButton(BotWebViewAttachedSheet.MainButtonSettings.of(isVisible, isActive, text, color, textColor, isProgressVisible));
+            }
+
+            @Override
+            public void onSetupSecondaryButton(boolean isVisible, boolean isActive, String text, int color, int textColor, boolean isProgressVisible, boolean hasShineEffect, String position) {
+
             }
 
             @Override
@@ -542,10 +553,7 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
         });
         swipeContainer.setScrollEndListener(()-> webViewContainer.invalidateViewPortHeight(true));
         swipeContainer.addView(webViewContainer);
-        swipeContainer.setDelegate(() -> {
-//            if (!onCheckDismissByUser()) {
-//                swipeContainer.stickTo(0);
-//            }
+        swipeContainer.setDelegate(byTap -> {
             dismiss(true, null);
         });
         swipeContainer.setTopActionBarOffsetY(ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight - AndroidUtilities.dp(24));
@@ -1095,7 +1103,8 @@ public class BotWebViewMenuContainer extends FrameLayout implements Notification
 
         webViewContainer = new BotWebViewContainer(getContext(), parentEnterView.getParentFragment().getResourceProvider(), getColor(Theme.key_windowBackgroundWhite), true) {
             @Override
-            public void onWebViewCreated() {
+            public void onWebViewCreated(MyWebView webView) {
+                super.onWebViewCreated(webView);
                 swipeContainer.setWebView(webViewContainer.getWebView());
             }
         };

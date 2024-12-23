@@ -1400,7 +1400,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                                 currentPlayerScope.firstFrameRendered = true;
                             }
                             FileLog.d("StoryViewer requestPlayer: currentPlayerScope.player start " + uri);
-                            currentPlayerScope.player.start(isPaused(), uri, t, isInSilentMode, currentSpeed);
+                            currentPlayerScope.player.start(false, isPaused(), uri, t, isInSilentMode, currentSpeed);
                             currentPlayerScope.invalidate();
                         } else {
                             FileLog.d("StoryViewer requestPlayer: url is null (1)");
@@ -1647,6 +1647,7 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
                 });
                 containerView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
             }
+            AndroidUtilities.setPreferredMaxRefreshRate(windowManager, windowView, windowLayoutParams);
             windowManager.addView(windowView, windowLayoutParams);
         }
         windowView.requestLayout();

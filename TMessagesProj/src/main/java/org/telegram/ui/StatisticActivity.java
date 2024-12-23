@@ -509,6 +509,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 }
             }
         } else if (id == NotificationCenter.boostByChannelCreated) {
+            if (getParentLayout() == null) return;
             TLRPC.Chat chat = (TLRPC.Chat) args[0];
             boolean isGiveaway = (boolean) args[1];
             List<BaseFragment> fragmentStack = getParentLayout().getFragmentStack();
@@ -2226,11 +2227,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         final int graphType;
         final String title;
 
-        boolean loading;
-        boolean isEmpty;
-        boolean isLanguages;
-        boolean useHourFormat;
-        boolean useWeekFormat;
+        public boolean loading;
+        public boolean isEmpty;
+        public boolean isLanguages;
+        public boolean useHourFormat;
+        public boolean useWeekFormat;
 
         public ChartViewData(String title, int grahType) {
             this.title = title;
@@ -2648,7 +2649,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueIcon));
         arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_text_RedRegular));
         arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CHECKTAG, new Class[]{ManageChatTextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_text_RedRegular));
-        arrayList.add(new ThemeDescription(recyclerListView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{ManageChatUserCell.class, ManageChatTextCell.class, HeaderCell.class, TextView.class, PeopleNearbyActivity.HintInnerCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
 
         if (isMegagroup) {
             for (int i = 0; i < 6; i++) {

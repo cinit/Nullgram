@@ -138,7 +138,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
                 parentAlert.makeFocusable(editText, true);
             }
         };
-        searchField.setHint(LocaleController.getString("SearchMusic", R.string.SearchMusic));
+        searchField.setHint(LocaleController.getString(R.string.SearchMusic));
         frameLayout.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
 
         progressView = new EmptyTextProgressView(context, null, resourcesProvider);
@@ -265,10 +265,10 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             emptyView.setVisibility(View.GONE);
         } else {
             if (listView.getAdapter() == searchAdapter) {
-                emptyTitleTextView.setText(LocaleController.getString("NoAudioFound", R.string.NoAudioFound));
+                emptyTitleTextView.setText(LocaleController.getString(R.string.NoAudioFound));
             } else {
-                emptyTitleTextView.setText(LocaleController.getString("NoAudioFiles", R.string.NoAudioFiles));
-                emptySubtitleTextView.setText(LocaleController.getString("NoAudioFilesInfo", R.string.NoAudioFilesInfo));
+                emptyTitleTextView.setText(LocaleController.getString(R.string.NoAudioFiles));
+                emptySubtitleTextView.setText(LocaleController.getString(R.string.NoAudioFilesInfo));
             }
             currentEmptyView = emptyView;
             progressView.setVisibility(View.GONE);
@@ -453,7 +453,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     private void showErrorBox(String error) {
-        new AlertDialog.Builder(getContext(), resourcesProvider).setTitle(LocaleController.getString("AppName", R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString("OK", R.string.OK), null).show();
+        new AlertDialog.Builder(getContext(), resourcesProvider).setTitle(LocaleController.getString(R.string.AppName)).setMessage(error).setPositiveButton(LocaleController.getString(R.string.OK), null).show();
     }
 
     private void onItemClick(View view) {
@@ -467,7 +467,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             sendPressed = true;
             ArrayList<MessageObject> audios = new ArrayList<>();
             audios.add(audioEntry.messageObject);
-            delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), false, 0, 0, false);
+            delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), false, 0, 0, false);
             add = true;
         } else if (selectedAudios.indexOfKey(audioEntry.id) >= 0) {
             selectedAudios.remove(audioEntry.id);
@@ -502,7 +502,7 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
         for (int a = 0; a < selectedAudiosOrder.size(); a++) {
             audios.add(selectedAudiosOrder.get(a).messageObject);
         }
-        delegate.didSelectAudio(audios, parentAlert.commentTextView.getText(), notify, scheduleDate, effectId, invertMedia);
+        delegate.didSelectAudio(audios, parentAlert.getCommentView().getText(), notify, scheduleDate, effectId, invertMedia);
     }
 
     public ArrayList<MessageObject> getSelected() {

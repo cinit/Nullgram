@@ -112,9 +112,14 @@ public class BillingController {
         if (!currencyExpMap.isEmpty()) {
             return;
         }
-        BillingUtilities.extractCurrencyExp(currencyExpMap);
-//        if (!BuildVars.useInvoiceBilling()) {
-//            billingClient.startConnection(this);
+        try {
+            BillingUtilities.extractCurrencyExp(currencyExpMap);
+            // if (!BuildVars.useInvoiceBilling()) {
+                // billingClient.startConnection(this);
+            // }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
     private void switchToInvoice() {
@@ -314,7 +319,8 @@ public class BillingController {
                 || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiftCode
                 || purpose instanceof TLRPC.TL_inputStorePaymentStarsTopup
                 || purpose instanceof TLRPC.TL_inputStorePaymentStarsGift
-                || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway) {
+                || purpose instanceof TLRPC.TL_inputStorePaymentPremiumGiveaway
+                || purpose instanceof TLRPC.TL_inputStorePaymentStarsGiveaway) {
             billingClient.consumeAsync(
                     ConsumeParams.newBuilder()
                             .setPurchaseToken(purchase.getPurchaseToken())

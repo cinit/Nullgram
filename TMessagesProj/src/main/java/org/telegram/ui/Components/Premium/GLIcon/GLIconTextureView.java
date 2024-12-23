@@ -99,7 +99,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         super(context);
 
         this.type = type;
-        animationsCount = type == Icon3D.TYPE_COIN ? 1 : 5;
+        animationsCount = type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL ? 1 : 5;
         setOpaque(false);
         setRenderer(new GLIconRenderer(context, style, type));
         initialize(context);
@@ -302,7 +302,13 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         public void run() {
             isRunning = true;
 
-            initGL();
+            try {
+                initGL();
+            } catch (Exception e) {
+                FileLog.e(e);
+                isRunning = false;
+                return;
+            }
             checkGlError();
 
             long lastFrameTime = System.currentTimeMillis();
@@ -321,16 +327,21 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
                     rendererChanged = false;
                 }
 
-                if (!shouldSleep()) {
-                    final long now = System.currentTimeMillis();
-                    float dt = (now - lastFrameTime) / 1000f;
-                    lastFrameTime = now;
-                    drawSingleFrame(dt);
-                    if (!ready) {
-                        ready = true;
-                        AndroidUtilities.runOnUIThread(readyListener);
-                        readyListener = null;
+                try {
+                    if (!shouldSleep()) {
+                        final long now = System.currentTimeMillis();
+                        float dt = (now - lastFrameTime) / 1000f;
+                        lastFrameTime = now;
+                        drawSingleFrame(dt);
+                        if (!ready) {
+                            ready = true;
+                            AndroidUtilities.runOnUIThread(readyListener);
+                            readyListener = null;
+                        }
                     }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    break;
                 }
 
                 try {
@@ -505,7 +516,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         return gestureDetector.onTouchEvent(event);
     }
 
-    private void startBackAnimation() {
+    public void startBackAnimation() {
         cancelAnimatons();
         float fromX = mRenderer.angleX;
         float fromY = mRenderer.angleY;
@@ -528,7 +539,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         scheduleIdleAnimation(idleDelay);
     }
 
-    private void cancelAnimatons() {
+    public void cancelAnimatons() {
         if (backAnimation != null) {
             backAnimation.removeAllListeners();
             backAnimation.cancel();
@@ -587,12 +598,16 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         mRenderer.angleY = (float) valueAnimator.getAnimatedValue();
     };
 
-    private void scheduleIdleAnimation(long time) {
+    public void scheduleIdleAnimation(long time) {
         AndroidUtilities.cancelRunOnUIThread(idleAnimation);
         if (dialogIsVisible) {
             return;
         }
         AndroidUtilities.runOnUIThread(idleAnimation, time);
+    }
+
+    public void cancelIdleAnimation() {
+        AndroidUtilities.cancelRunOnUIThread(idleAnimation);
     }
 
 
@@ -642,7 +657,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
     private void pullAnimation() {
         int i = Math.abs(Utilities.random.nextInt() % 4);
         animatorSet = new AnimatorSet();
-        if (i == 0 && type != Icon3D.TYPE_COIN) {
+        if (i == 0 && type != Icon3D.TYPE_COIN && type != Icon3D.TYPE_DEAL) {
             int a = 48;
 
             ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleY, a);
@@ -659,7 +674,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
             animatorSet.playTogether(v1, v2);
         } else {
             int dg = 485;
-            if (type == Icon3D.TYPE_COIN) {
+            if (type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL) {
                 dg = 360;
             }
             int a = dg;

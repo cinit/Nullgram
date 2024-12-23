@@ -22,23 +22,40 @@ package org.telegram.ui.Components;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteStatement;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
+import android.text.style.URLSpan;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
+import org.telegram.SQLite.SQLiteCursor;
+import org.telegram.SQLite.SQLiteDatabase;
+import org.telegram.SQLite.SQLitePreparedStatement;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_bots;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DialogsBotsAdapter extends UniversalAdapter {
 
@@ -48,9 +65,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
     private final boolean showOnlyPopular;
     private final Theme.ResourcesProvider resourcesProvider;
 
-    private String popularBotsNextOffset;
-    private boolean popularBotsLoaded, popularBotsLoading;
-    public final ArrayList<TLRPC.User> popularBots = new ArrayList<>();
+    private final PopularBots popular;
 
     public final ArrayList<TLRPC.User> searchMine = new ArrayList<>();
     public final ArrayList<TLRPC.User> searchGlobal = new ArrayList<>();
@@ -59,17 +74,50 @@ public class DialogsBotsAdapter extends UniversalAdapter {
     public boolean expandedMyBots;
     public boolean expandedSearchBots;
 
+    private final CharSequence infoText;
+
     public DialogsBotsAdapter(RecyclerListView listView, Context context, int currentAccount, int folderId, boolean showOnlyPopular, Theme.ResourcesProvider resourcesProvider) {
-        super(listView, context, currentAccount, 0, null, resourcesProvider);
+        super(listView, context, currentAccount, 0, true, null, resourcesProvider);
         super.fillItems = this::fillItems;
         this.context = context;
         this.currentAccount = currentAccount;
         this.folderId = folderId;
         this.resourcesProvider = resourcesProvider;
         this.showOnlyPopular = showOnlyPopular;
+        this.popular = new PopularBots(currentAccount, () -> update(true));
+        this.infoText = AndroidUtilities.replaceArrows(AndroidUtilities.replaceSingleTag(LocaleController.getString(R.string.AppsTabInfo), () -> {
+            final AlertDialog[] alert = new AlertDialog[1];
+            SpannableStringBuilder text = AndroidUtilities.replaceTags(AndroidUtilities.replaceLinks(LocaleController.getString(R.string.AppsTabInfoText), resourcesProvider, () -> {
+                if (alert[0] != null) {
+                    alert[0].dismiss();
+                }
+            }));
+            Matcher m = Pattern.compile("@([a-zA-Z0-9_-]+)").matcher(text);
+            while (m.find()) {
+                final String username = m.group(1);
+                text.setSpan(new ClickableSpan() {
+                    @Override
+                    public void onClick(@NonNull View widget) {
+                        if (alert[0] != null) {
+                            alert[0].dismiss();
+                        }
+                        Browser.openUrl(context, "https://t.me/" + username);
+                    }
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                    }
+                }, m.start(), m.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            alert[0] = new AlertDialog.Builder(context, resourcesProvider)
+                .setTitle(LocaleController.getString(R.string.AppsTabInfoTitle))
+                .setMessage(text)
+                .setPositiveButton(LocaleController.getString(R.string.AppsTabInfoButton), null)
+                .show();
+        }), true);
         update(false);
         MediaDataController.getInstance(currentAccount).loadHints(true);
-        loadPopularBots();
     }
 
     private int topPeersStart, topPeersEnd;
@@ -114,6 +162,7 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                     top_peers_bots.add(user);
                 }
             }
+            boolean hasAdded = false;
             topPeersStart = items.size();
             if (!top_peers_bots.isEmpty() && !showOnlyPopular) {
                 if (top_peers_bots.size() > 5) {
@@ -130,25 +179,29 @@ public class DialogsBotsAdapter extends UniversalAdapter {
                 }
             }
             topPeersEnd = items.size();
-            if (!popularBots.isEmpty()) {
+            if (!popular.bots.isEmpty()) {
                 if (!showOnlyPopular) items.add(UItem.asGraySection(getString(R.string.SearchAppsPopular)));
-                for (int i = 0; i < popularBots.size(); ++i) {
-                    final TLRPC.User user = popularBots.get(i);
+                for (int i = 0; i < popular.bots.size(); ++i) {
+                    final TLRPC.User user = popular.bots.get(i);
                     if (uids.contains(user.id)) continue;
                     uids.add(user.id);
-                    items.add(UItem.asProfileCell(user).accent());
+                    items.add(UItem.asProfileCell(user).accent().red());
+                    hasAdded = true;
                 }
-                if (popularBotsNextOffset != null || popularBotsLoading) {
+                if (popular.loading) {
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                     items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 }
-            } else if (popularBotsNextOffset != null || popularBotsLoading) {
+            } else if (popular.loading) {
                 if (!showOnlyPopular) items.add(UItem.asFlicker(FlickerLoadingView.GRAY_SECTION));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
                 items.add(UItem.asFlicker(FlickerLoadingView.PROFILE_SEARCH_CELL));
+            }
+            if (hasAdded) {
+                items.add(UItem.asShadow(infoText));
             }
         }
     }
@@ -359,16 +412,18 @@ public class DialogsBotsAdapter extends UniversalAdapter {
         searchMessages(true);
     }
 
+    private boolean first = true;
     public void checkBottom() {
         if (!TextUtils.isEmpty(this.query)) {
             if (hasMore && !loadingMessages && seesLoading()) {
                 searchMore();
             }
         } else {
-            if (!popularBotsLoading && !TextUtils.isEmpty(popularBotsNextOffset) && seesLoading()) {
-                loadPopularBots();
+            if (first || seesLoading()) {
+                popular.load();
             }
         }
+        first = false;
     }
 
     public boolean seesLoading() {
@@ -392,26 +447,146 @@ public class DialogsBotsAdapter extends UniversalAdapter {
         return false;
     }
 
-    public void loadPopularBots() {
-        if (popularBotsLoading || popularBotsLoaded && popularBotsNextOffset == null) return;
+    public static class PopularBots {
 
-        popularBotsLoading = true;
-        TL_bots.getPopularAppBots req = new TL_bots.getPopularAppBots();
-        req.offset = popularBotsNextOffset == null ? "" : popularBotsNextOffset;
-        req.limit = 20;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
-            popularBotsLoading = false;
-            popularBotsLoaded = true;
-            if (res instanceof TL_bots.popularAppBots) {
-                TL_bots.popularAppBots r = (TL_bots.popularAppBots) res;
-                MessagesController.getInstance(currentAccount).putUsers(r.users, false);
-                popularBots.addAll(r.users);
-                popularBotsNextOffset = r.next_offset;
-            } else {
-                popularBotsNextOffset = null;
+        private final int currentAccount;
+        private final Runnable whenUpdated;
+        public PopularBots(int currentAccount, Runnable whenUpdated) {
+            this.currentAccount = currentAccount;
+            this.whenUpdated = whenUpdated;
+        }
+
+        public boolean loading;
+        private boolean cacheLoaded;
+        private boolean endReached;
+
+        private long cacheTime;
+        private String lastOffset;
+        public final ArrayList<TLRPC.User> bots = new ArrayList<>();
+
+        private void loadCache(Runnable whenDone) {
+            final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
+            storage.getStorageQueue().postRunnable(() -> {
+                long time = 0;
+                String offset = null;
+                final ArrayList<TLRPC.User> users = new ArrayList<>();
+                final ArrayList<Long> userIds = new ArrayList<>();
+
+                final SQLiteDatabase db = storage.getDatabase();
+                SQLiteCursor cursor = null;
+                try {
+                    cursor = db.queryFinalized("SELECT uid, time, offset FROM popular_bots");
+                    while (cursor.next()) {
+                        userIds.add(cursor.longValue(0));
+                        time = Math.max(time, cursor.longValue(1));
+                        offset = cursor.stringValue(2);
+                    }
+                    cursor.dispose();
+                    users.addAll(storage.getUsers(userIds));
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (cursor != null) {
+                        cursor.dispose();
+                    }
+                }
+
+                final long finalTime = time;
+                final String finalOffset = offset;
+                AndroidUtilities.runOnUIThread(() -> {
+                    MessagesController.getInstance(currentAccount).putUsers(users, true);
+
+                    bots.addAll(users);
+                    this.cacheTime = finalTime;
+                    this.lastOffset = finalOffset;
+                    this.cacheLoaded = true;
+
+                    whenDone.run();
+                });
+            });
+        }
+
+        private boolean savingCache = false;
+        private void saveCache() {
+            if (savingCache) return;
+            savingCache = true;
+
+            final long time = cacheTime;
+            final String offset = lastOffset;
+            final ArrayList<Long> ids = new ArrayList<>();
+            for (int i = 0; i < bots.size(); ++i) {
+                ids.add(bots.get(i).id);
             }
-            update(true);
-        }));
+
+            final MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
+            storage.getStorageQueue().postRunnable(() -> {
+                final SQLiteDatabase db = storage.getDatabase();
+                SQLitePreparedStatement state = null;
+                try {
+                    db.executeFast("DELETE FROM popular_bots").stepThis().dispose();
+                    state = db.executeFast("REPLACE INTO popular_bots VALUES(?, ?, ?)");
+                    for (int i = 0; i < ids.size(); i++) {
+                        state.requery();
+                        state.bindLong(1, ids.get(i));
+                        state.bindLong(2, time);
+                        state.bindString(3, offset);
+                        state.step();
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (state != null) {
+                        state.dispose();
+                    }
+                }
+
+                AndroidUtilities.runOnUIThread(() -> {
+                    savingCache = false;
+                });
+            });
+        }
+
+        public void load() {
+            if (loading || endReached) return;
+            loading = true;
+
+            if (!cacheLoaded) {
+                loadCache(() -> {
+                    loading = false;
+                    whenUpdated.run();
+
+                    if (System.currentTimeMillis() - cacheTime > 60 * 60 * 1000) {
+                        bots.clear();
+                        lastOffset = null;
+                        load();
+                    }
+                });
+                return;
+            }
+
+            TL_bots.getPopularAppBots req = new TL_bots.getPopularAppBots();
+            req.limit = 20;
+            req.offset = lastOffset == null ? "" : lastOffset;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> AndroidUtilities.runOnUIThread(() -> {
+                if (res instanceof TL_bots.popularAppBots) {
+                    TL_bots.popularAppBots r = (TL_bots.popularAppBots) res;
+                    MessagesController.getInstance(currentAccount).putUsers(r.users, false);
+                    MessagesStorage.getInstance(currentAccount).putUsersAndChats(r.users, null, false, true);
+                    bots.addAll(r.users);
+                    lastOffset = r.next_offset;
+                    endReached = lastOffset == null;
+                    cacheTime = System.currentTimeMillis();
+                    saveCache();
+                    loading = false;
+                    whenUpdated.run();
+                } else {
+                    lastOffset = null;
+                    endReached = true;
+                    loading = false;
+                    whenUpdated.run();
+                }
+            }));
+        }
     }
 
 

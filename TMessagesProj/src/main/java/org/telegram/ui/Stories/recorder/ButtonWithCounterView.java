@@ -33,6 +33,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.OvershootInterpolator;
@@ -42,6 +43,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedFloat;
@@ -351,7 +353,7 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         }
         lastCount = count;
         countAlpha = count != 0 || showZero ? 1f : 0f;
-        countText.setText("" + count, animated);
+        countText.setText(LocaleController.formatNumber(count, ' '), animated);
         invalidate();
     }
 
@@ -575,5 +577,13 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable {
         } else {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (filled && isClickable() && getParent() != null) {
+            getParent().requestDisallowInterceptTouchEvent(true);
+        }
+        return super.onInterceptTouchEvent(ev);
     }
 }
