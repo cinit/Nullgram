@@ -27,10 +27,6 @@ jobs:
                 with:
                     submodules: 'recursive'
                     fetch-depth: 0
-            -   name: Setup CMake
-                uses: jwlawson/actions-setup-cmake@v1.12
-                with:
-                    cmake-version: '3.22.1'
             -   name: Setup Java
                 uses: actions/setup-java@v3
                 with:
@@ -67,6 +63,7 @@ jobs:
                     df -h
                     sudo apt-get install bison gcc make curl ninja-build -y
                     echo "y" | sdkmanager --install "ndk;27.0.12077973" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+                    sdkmanager --install "cmake;3.22.1" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
                     echo "sdk.dir=${ANDROID_HOME}" >> local.properties
             -   name: Debug Build
                 run: |
