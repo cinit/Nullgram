@@ -71,6 +71,8 @@ jobs:
             -   name: Debug Build
                 run: |
                     mkdir -p TMessagesProj/config
+                    # placeholder FCM config, replace with your own
+                    curl https://raw.githubusercontent.com/cinit/Nullgram/6344e9a7636906ad80787d077436c625cddd4f00/TMessagesProj/google-services.json -o TMessagesProj/google-services.json
                     echo "${{ secrets.SIGN_KEYSTORE_BASE64 }}" | base64 -d > TMessagesProj/config/release.keystore
                     echo -e "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}\nRELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}\nRELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}">>local.properties
                     ./gradlew :TMessagesProj:assembleDebug
