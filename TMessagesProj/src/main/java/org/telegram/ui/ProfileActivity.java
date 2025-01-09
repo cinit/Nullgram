@@ -14570,6 +14570,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             itemOptions.add(R.drawable.profile_phone, getString(R.string.ProfilePhoneEdit), () -> {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
             });
+            itemOptions.add(R.drawable.msg_archive_hide, LocaleController.getString("Hide", R.string.Hide), () -> {
+                // PHONE_OPTION_HIDE
+                hidePhone = true;
+                updateListAnimated(false);
+            });
         } else if (position == birthdayRow) {
             itemOptions.add(R.drawable.msg_edit, getString(R.string.ProfileBirthdayChange), () -> {
                 showDialog(AlertsCreator.createBirthdayPickerDialog(getContext(), getString(R.string.EditProfileBirthdayTitle), getString(R.string.EditProfileBirthdayButton), userFull.birthday, birthday -> {
