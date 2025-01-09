@@ -242,3 +242,8 @@ private fun getLocalProperty(dir: File, propertyName: String): String? {
     }
     return localProperties.getProperty(propertyName, null)
 }
+
+tasks.withType<JavaCompile> {
+    // lager heap for javac
+    options.forkOptions.memoryMaximumSize = "4g"
+}
