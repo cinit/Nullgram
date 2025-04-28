@@ -8,6 +8,21 @@
 
 package org.telegram.messenger;
 
+import android.content.Context;
+import android.content.res.ColorStateList;
+import android.os.Debug;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.messenger.video.MediaCodecVideoConvertor;
@@ -16,6 +31,12 @@ import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 
 import top.qwq2333.nullgram.utils.Log;
 
@@ -34,6 +55,8 @@ public class FileLog {
     private File tonlibFile = null;
     private boolean initied;
     public static boolean databaseIsMalformed = false;
+
+    public static final boolean LOG_ANRS = BuildVars.DEBUG_VERSION;
 
     private OutputStreamWriter tlStreamWriter = null;
     private File tlRequestsFile = null;
@@ -132,6 +155,36 @@ public class FileLog {
         fatal(e, true);
     }
 
+    private static long dumpedHeap;
+    private void dumpMemory() {
+        if (System.currentTimeMillis() - dumpedHeap < 30_000) return;
+        dumpedHeap = System.currentTimeMillis();
+        try {
+            Debug.dumpHprofData(new File(AndroidUtilities.getLogsDir(), getInstance().dateFormat.format(System.currentTimeMillis()) + "_heap.hprof").getAbsolutePath());
+        } catch (Exception e2) {
+            FileLog.e(e2);
+        }
+    }
+
+    private void dumpANR() {
+        StringBuilder sb = new StringBuilder();
+        Map<Thread, StackTraceElement[]> allThreads = Thread.getAllStackTraces();
+
+        for (Map.Entry<Thread, StackTraceElement[]> entry : allThreads.entrySet()) {
+            Thread thread = entry.getKey();
+            StackTraceElement[] stackTrace = entry.getValue();
+
+            sb.append("Thread: ").append(thread.getName()).append("\n");
+            for (StackTraceElement element : stackTrace) {
+                sb.append("\tat ").append(element).append("\n");
+            }
+            sb.append("\n\n");
+        }
+
+        FileLog.e("ANR thread dump\n" + sb.toString());
+        dumpMemory();
+    }
+
     public static void fatal(final Throwable e, boolean logToAppCenter) {
         if (needSent(e) && logToAppCenter) {
             AndroidUtilities.appCenterLog(e);
@@ -178,5 +231,32 @@ public class FileLog {
             super(e);
         }
 
+    }
+
+    public class ANRDetector {
+        private final long TIMEOUT_MS = 5000; // ANR threshold (5 seconds)
+        private final Handler mainHandler = new Handler(Looper.getMainLooper());
+        private boolean isUIThreadResponsive = true;
+
+        public ANRDetector(Runnable anrDetected) {
+            new Thread(() -> {
+                while (true) {
+                    isUIThreadResponsive = false;
+
+                    // Post a task to the main thread
+                    mainHandler.post(() -> isUIThreadResponsive = true);
+
+                    try {
+                        Thread.sleep(TIMEOUT_MS);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (!isUIThreadResponsive) {
+                        anrDetected.run();
+                    }
+                }
+            }).start();
+        }
     }
 }
