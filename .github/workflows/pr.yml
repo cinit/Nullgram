@@ -28,10 +28,6 @@ jobs:
       - name: Check out submodules
         run: |
           git -c submodule."libs/rust".update=none submodule update --init --recursive
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v1.12
-        with:
-          cmake-version: '3.22.1'
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -50,7 +46,7 @@ jobs:
       - name: Prepare Environment
         run: |
             echo "Removing large packages"
-            sudo apt-get remove -y '^dotnet-.*' aspnetcore-targeting-pack-6.0 aspnetcore-targeting-pack-7.0
+            sudo apt-get remove -y '^dotnet-.*' aspnetcore-targeting-pack-6.0
             sudo apt-get remove -y '^llvm-.*'
             sudo apt-get remove -y 'php.*'
             sudo apt-get remove -y '^mongodb-.*'
@@ -68,7 +64,7 @@ jobs:
             df -h
             
             sudo apt-get install bison gcc make curl ninja-build ccache -y
-            echo "y" | sdkmanager --install "ndk;27.0.12077973" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
+            echo "y" | sdkmanager --install "ndk;28.0.13004108" --sdk_root=${ANDROID_SDK_ROOT} &> /dev/null
             echo "sdk.dir=${ANDROID_HOME}" >> local.properties
       - name: Debug Build
         run: |
