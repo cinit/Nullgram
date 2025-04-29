@@ -1502,7 +1502,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private final Path mediaSpoilerPath = new Path();
     private final float[] mediaSpoilerRadii = new float[8];
     @Nullable
-    private final SpoilerEffect mediaSpoilerEffect;
+    private SpoilerEffect mediaSpoilerEffect;
     private float mediaSpoilerRevealProgress;
     private float mediaSpoilerRevealX;
     private float mediaSpoilerRevealY;
@@ -1522,7 +1522,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private int unlockTextWidth;
     private String currentUnlockString;
     @Nullable
-    private final SpoilerEffect unlockSpoilerEffect;
+    private SpoilerEffect unlockSpoilerEffect;
     private final Path unlockSpoilerPath = new Path();
     private final float[] unlockSpoilerRadii = new float[8];
 

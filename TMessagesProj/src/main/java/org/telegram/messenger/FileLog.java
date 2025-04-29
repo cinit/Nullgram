@@ -13,7 +13,6 @@ import android.content.res.ColorStateList;
 import android.os.Debug;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
