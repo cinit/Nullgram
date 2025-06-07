@@ -8468,20 +8468,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     // last fragment that is not finishing itself
-    public static <T extends BaseFragment> T findFragment(Class<T> clazz) {
-        if (BubbleActivity.instance != null && BubbleActivity.instance.actionBarLayout != null) {
-            return BubbleActivity.instance.actionBarLayout.findFragment(clazz);
-        }
-        if (instance != null && !instance.sheetFragmentsStack.isEmpty()) {
-            return instance.sheetFragmentsStack.get(instance.sheetFragmentsStack.size() - 1).findFragment(clazz);
-        }
-        if (instance != null && instance.getActionBarLayout() != null) {
-            return instance.getActionBarLayout().findFragment(clazz);
-        }
-        return null;
-    }
-
-    // last fragment that is not finishing itself
     public static BaseFragment getSafeLastFragment() {
         if (BubbleActivity.instance != null && BubbleActivity.instance.actionBarLayout != null) {
             return BubbleActivity.instance.actionBarLayout.getSafeLastFragment();

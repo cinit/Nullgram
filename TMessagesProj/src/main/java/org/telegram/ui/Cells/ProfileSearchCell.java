@@ -154,11 +154,6 @@ public class ProfileSearchCell extends BaseCell implements NotificationCenter.No
     private Paint adBackgroundPaint;
     private final ButtonBounce adBounce = new ButtonBounce(this);
 
-    private final RectF adBounds = new RectF();
-    private Text adText;
-    private Paint adBackgroundPaint;
-    private final ButtonBounce adBounce = new ButtonBounce(this);
-
     private RectF rect = new RectF();
 
     CheckBox2 checkBox;

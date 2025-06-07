@@ -1535,7 +1535,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private Path mediaSpoilerPath = new Path();
     private float[] mediaSpoilerRadii = new float[8];
     @Nullable
-    @Nullable
     private SpoilerEffect mediaSpoilerEffect;
     private float mediaSpoilerRevealProgress;
     private float mediaSpoilerRevealX;
