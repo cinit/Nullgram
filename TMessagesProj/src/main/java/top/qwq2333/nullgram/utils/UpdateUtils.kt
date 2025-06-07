@@ -156,8 +156,8 @@ object UpdateUtils {
     private const val previewMetadataChannelName = "PreviewMetaData"
     private const val stableChannelAPKsID: Long = 1645976613
     private const val stableChannelAPKsName = "NullgramAPKs"
-    private const val previewChannelAPKsID: Long = 1714986438
-    private const val previewChannelAPKsName = "NullgramCI"
+    private const val previewChannelAPKsID: Long = 2692101396
+    private const val previewChannelAPKsName = "RealWisadel"
 
     @JvmStatic
     fun retrieveUpdateMetadata(callback: (UpdateMetadata?, Boolean) -> Unit) {

@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.biometric)
 
     compileOnly(libs.checker.compat.qual)
+    compileOnly(libs.checker.qual)
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.config)
     implementation(libs.play.services.vision)
@@ -212,7 +213,7 @@ android {
 
     androidComponents {
         onVariants { variant ->
-            variant.buildConfigFields.put("isPlay", BuildConfigField("boolean", variant.name.lowercase() == "play", null))
+            variant.buildConfigFields!!.put("isPlay", BuildConfigField("boolean", variant.name.lowercase() == "play", null))
         }
     }
 
