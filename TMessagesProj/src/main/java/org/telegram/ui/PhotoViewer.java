@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * Copyright (C) 2019-2025 qwq233 <qwq233@qwq2333.top>
  * https://github.com/qwq233/Nullgram
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with this software.
- *  If not, see
- * <https://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package org.telegram.ui;
@@ -4225,6 +4223,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     int added = 0;
                     for (int a = 0; a < arr.size(); a++) {
                         MessageObject message = arr.get(a);
+                        if (message.isHiddenSensitive())
+                            continue;
                         if (imagesByIdsTemp[loadIndex].indexOfKey(message.getId()) < 0) {
                             imagesByIdsTemp[loadIndex].put(message.getId(), message);
                             if (opennedFromMedia) {
@@ -7233,7 +7233,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         pickerViewSendButton.setContentDescription(getString("Send", R.string.Send));
         ScaleStateListAnimator.apply(pickerViewSendButton);
         pickerViewSendButton.setOnClickListener(v -> {
-            if (parentChatActivity != null && parentChatActivity.editingMessageObject != null && parentChatActivity.editingMessageObject.needResendWhenEdit()) {
+            if (parentChatActivity != null && parentChatActivity.editingMessageObject != null && parentChatActivity.editingMessageObject.needResendWhenEdit() && !ChatObject.canManageMonoForum(currentAccount, parentChatActivity.editingMessageObject.getDialogId())) {
                 final MessageSuggestionParams params = parentFragment != null && parentChatActivity.messageSuggestionParams != null ?
                         parentChatActivity.messageSuggestionParams :
                         MessageSuggestionParams.of(parentChatActivity.editingMessageObject.messageOwner.suggested_post);
@@ -14008,7 +14008,15 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 containerView.setTag(null);
             }
         } else if (messages != null) {
-            imagesArr.addAll(messages);
+            for (int i = 0; i < messages.size(); ++i) {
+                final MessageObject msg = messages.get(i);
+                if (i == index || !msg.isHiddenSensitive()) {
+                    if (i == index) {
+                        index = imagesArr.size();
+                    }
+                    imagesArr.add(msg);
+                }
+            }
             for (int a = 0; a < imagesArr.size(); a++) {
                 MessageObject message = imagesArr.get(a);
                 imagesByIds[message.getDialogId() == currentDialogId ? 0 : 1].put(message.getId(), message);
@@ -14175,7 +14183,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         imagesArr.clear();
                         for (int i = 0; i < messageObjects.size(); ++i) {
                             MessageObject msg = messageObjects.get(i);
-                            if (MediaDataController.getMediaType(msg.messageOwner) != sharedMediaType)
+                            if (MediaDataController.getMediaType(msg.messageOwner) != sharedMediaType || msg.isHiddenSensitive())
                                 continue;
                             imagesArr.add(msg);
                             imagesByIds[0].put(msg.getId(), msg);
@@ -14698,7 +14706,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                             compressItem.setVisibility(View.GONE);
                         } else {
                             showVideoTimeline(true, animated);
-                            if (sendPhotoType != SELECT_TYPE_AVATAR) {
+                            if (sendPhotoType != SELECT_TYPE_AVATAR && sendPhotoType != SELECT_TYPE_STICKER) {
                                 videoAvatarTooltip.setVisibility(View.GONE);
                                 cropItem.setVisibility(View.VISIBLE);
                                 cropItem.setTag(1);
@@ -14743,7 +14751,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     isCurrentVideo = false;
                     if (object instanceof MediaController.PhotoEntry && !((MediaController.PhotoEntry) object).isVideo) {
                         final MediaController.PhotoEntry entry = (MediaController.PhotoEntry) object;
-                        if (!entry.isVideo && (currentIndex == index ? getCurrentVideoEditedInfo() : entry.editedInfo) == null) {
+                        if (!entry.isVideo && sendPhotoType != SELECT_TYPE_STICKER && (currentIndex == index ? getCurrentVideoEditedInfo() : entry.editedInfo) == null) {
                             compressItem.setVisibility(View.VISIBLE);
                             compressItem.setPhotoState(highQuality);
                         } else {

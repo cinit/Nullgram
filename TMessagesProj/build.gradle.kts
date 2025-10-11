@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.aboutlibraries)
     alias(libs.plugins.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.rust)
+    //alias(libs.plugins.rust)
 }
 
 configurations {
@@ -44,14 +44,14 @@ fun setupPlay(stable: Boolean) {
     }
 }
 
-cargo {
-    module = "../libs/rust"
-    libname = "rust"
-    targets = listOf("arm64", "x86_64")
-
-    prebuiltToolchains = true
-    profile = "release"
-}
+//cargo {
+//    module = "../libs/rust"
+//    libname = "rust"
+//    targets = listOf("arm64", "x86_64")
+//
+//    prebuiltToolchains = true
+//    profile = "release"
+//}
 
 dependencies {
     implementation(platform(libs.firebase.bom))

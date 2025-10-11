@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * Copyright (C) 2019-2025 qwq233 <qwq233@qwq2333.top>
  * https://github.com/qwq233/Nullgram
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with this software.
- *  If not, see
- * <https://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package org.telegram.ui.Cells;
@@ -85,7 +83,6 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
-import org.telegram.messenger.SavedMessagesController;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -167,6 +164,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     public static final int SENT_STATE_READ = 2;
     public boolean drawAvatar = true;
     public boolean drawMonoforumAvatar = false;
+    private boolean isShareToStoryCell;
+    public ShareDialogCell.RepostStoryDrawable repostStoryDrawable;
     public int avatarStart = 10;
     public int messagePaddingStart = 72;
     public int heightDefault = 72;
@@ -292,6 +291,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     public void setIsTransitionSupport(boolean isTransitionSupport) {
         this.isTransitionSupport = isTransitionSupport;
+    }
+
+    public void setIsShareToStoryCell() {
+        repostStoryDrawable = new ShareDialogCell.RepostStoryDrawable(getContext(), this, R.drawable.forward_to_stories, resourcesProvider);
+        isShareToStoryCell = true;
     }
 
     public float collapseOffset = 0;
@@ -482,11 +486,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean hasCall;
     private boolean showTtl;
 
-    private int nameLeft;
-    private int nameWidth;
-    private StaticLayout nameLayout;
+    public boolean isForChannelSubscriberCell;
+    public int namePaddingEnd;
+    public int nameLeft;
+    public int nameWidth;
+    public int nameAdditionalsForChannelSubscriber;
+    public boolean channelShouldUseLineWidth;
+    public StaticLayout nameLayout;
     private boolean nameLayoutFits;
-    private float nameLayoutTranslateX;
+    public float nameLayoutTranslateX;
     private boolean nameLayoutEllipsizeLeft;
     private boolean nameLayoutEllipsizeByGradient;
     private Paint fadePaint;
@@ -749,7 +757,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private void checkChatTheme() {
         if (message != null && message.messageOwner != null && message.messageOwner.action instanceof TLRPC.TL_messageActionSetChatTheme && lastUnreadState) {
             TLRPC.TL_messageActionSetChatTheme setThemeAction = (TLRPC.TL_messageActionSetChatTheme) message.messageOwner.action;
-            ChatThemeController.getInstance(currentAccount).setDialogTheme(currentDialogId, setThemeAction.emoticon,false);
+            ChatThemeController.getInstance(currentAccount).setDialogTheme(currentDialogId, setThemeAction.theme, false);
         }
     }
 
@@ -1155,6 +1163,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             msgText = sp;
         }
         lastMessageString = msgText;
+
+        if (isShareToStoryCell) {
+            drawPinBackground = true;
+            showChecks = false;
+            drawTime = false;
+        }
 
         if (customDialog != null) {
             if (customDialog.type == 2) {
@@ -2114,39 +2128,51 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
         }
 
+        nameAdditionalsForChannelSubscriber = 0;
         if (drawPremium && emojiStatus.getDrawable() != null) {
             int w = dp(6 + 24 + 6);
             nameWidth -= w;
+            nameAdditionalsForChannelSubscriber += w;
             if (LocaleController.isRTL) {
                 nameLeft += w;
             }
         } else if ((dialogMuted || drawUnmute) && !drawVerified && drawScam == 0) {
             int w = dp(6) + Theme.dialogs_muteDrawable.getIntrinsicWidth();
             nameWidth -= w;
+            nameAdditionalsForChannelSubscriber += w;
             if (LocaleController.isRTL) {
                 nameLeft += w;
             }
         } else if (drawVerified) {
             int w = dp(6) + Theme.dialogs_verifiedDrawable.getIntrinsicWidth();
             nameWidth -= w;
+            nameAdditionalsForChannelSubscriber += w;
             if (LocaleController.isRTL) {
                 nameLeft += w;
             }
         } else if (drawPremium) {
             int w = dp(6 + 24 + 6);
             nameWidth -= w;
+            nameAdditionalsForChannelSubscriber += w;
             if (LocaleController.isRTL) {
                 nameLeft += w;
             }
         } else if (drawScam != 0) {
             int w = dp(6) + (drawScam == 1 ? Theme.dialogs_scamDrawable : Theme.dialogs_fakeDrawable).getIntrinsicWidth();
             nameWidth -= w;
+            nameAdditionalsForChannelSubscriber += w;
             if (LocaleController.isRTL) {
                 nameLeft += w;
             }
         }
         if (drawBotVerified) {
             nameWidth -= dp(21);
+        }
+        if (namePaddingEnd > 0) {
+            nameWidth -= namePaddingEnd;
+            if (LocaleController.isRTL) {
+                nameLeft += namePaddingEnd;
+            }
         }
         try {
             int ellipsizeWidth = nameWidth - dp(12);
@@ -2160,6 +2186,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (nameLayoutEllipsizeByGradient) {
                 nameLayoutFits = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
                 ellipsizeWidth += dp(48);
+                channelShouldUseLineWidth = nameLayoutFits;
+            } else if (isForChannelSubscriberCell) {
+                channelShouldUseLineWidth = nameStringFinal.length() == TextUtils.ellipsize(nameStringFinal, Theme.dialogs_namePaint[paintIndex], ellipsizeWidth, TextUtils.TruncateAt.END).length();
             }
             nameIsEllipsized = Theme.dialogs_namePaint[paintIndex].measureText(nameStringFinal.toString()) > ellipsizeWidth;
             if (!twoLinesForName) {
@@ -2944,7 +2973,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             dialogMuted = customDialog.muted;
             hasUnmutedTopics = false;
             avatarDrawable.setInfo(customDialog.id, customDialog.name, null);
-            avatarImage.setImage(null, "50_50", avatarDrawable, null, 0);
+            if (isShareToStoryCell) {
+                avatarImage.setImage(null, "50_50", repostStoryDrawable, null, 0);
+            } else {
+                avatarImage.setImage(null, "50_50", avatarDrawable, null, 0);
+            }
+
             for (int i = 0; i < thumbImage.length; ++i) {
                 thumbImage[i].setImageBitmap((BitmapDrawable) null);
             }
@@ -4291,8 +4325,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 avatarImage.draw(canvas);
                 canvas.restore();
             } else {
-                storyParams.drawHiddenStoriesAsSegments = currentDialogFolderId != 0;
+                storyParams.drawHiddenStoriesAsSegments = isShareToStoryCell || currentDialogFolderId != 0;
+                int s = storyParams.forceState;
+                if (isShareToStoryCell) {
+                    storyParams.forceState = StoriesUtilities.STATE_HAS_UNREAD;
+                }
                 StoriesUtilities.drawAvatarWithStory(currentDialogId, canvas, avatarImage, storyParams);
+                storyParams.forceState = s;
             }
         }
 
@@ -5600,7 +5639,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (rightFragmentOpenedProgress == 0 && !isTopic && storyParams.checkOnTouchEvent(ev, this)) {
+        if (rightFragmentOpenedProgress == 0 && !isTopic && !isShareToStoryCell && storyParams.checkOnTouchEvent(ev, this)) {
             return true;
         }
         return super.onInterceptTouchEvent(ev);
@@ -5608,7 +5647,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (!isTopic && ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+        if (!isTopic && !isShareToStoryCell && ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
             storyParams.checkOnTouchEvent(ev, this);
         }
         return super.dispatchTouchEvent(ev);
@@ -5616,7 +5655,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (rightFragmentOpenedProgress == 0 && !isTopic && storyParams.checkOnTouchEvent(event, this)) {
+        if (rightFragmentOpenedProgress == 0 && !isTopic && !isShareToStoryCell && storyParams.checkOnTouchEvent(event, this)) {
             return true;
         }
         if (delegate == null || delegate.canClickButtonInside()) {

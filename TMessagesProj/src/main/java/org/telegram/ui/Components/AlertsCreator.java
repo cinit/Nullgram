@@ -1,20 +1,18 @@
 /*
- * Copyright (C) 2019-2024 qwq233 <qwq233@qwq2333.top>
+ * Copyright (C) 2019-2025 qwq233 <qwq233@qwq2333.top>
  * https://github.com/qwq233/Nullgram
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with this software.
- *  If not, see
- * <https://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package org.telegram.ui.Components;
@@ -63,6 +61,7 @@ import android.util.Base64;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -78,6 +77,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RawRes;
 import androidx.annotation.RequiresApi;
 import androidx.core.util.Consumer;
@@ -115,6 +115,7 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_phone;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -142,6 +143,7 @@ import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.PrivacyControlActivity;
 import org.telegram.ui.ProfileActivity;
 import org.telegram.ui.ProfileNotificationsActivity;
+import org.telegram.ui.Stars.StarGiftSheet;
 import org.telegram.ui.Stars.StarsController;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.DarkThemeResourceProvider;
@@ -292,7 +294,7 @@ public class AlertsCreator {
 
                     new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, price, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogId), () -> {
 
-                    }).show();
+                    }, dialogId).show();
                 }, true);
             }
         } else if (request instanceof TLRPC.TL_messages_sendMessage && error.text.contains("PRIVACY_PREMIUM_REQUIRED")) {
@@ -815,7 +817,7 @@ public class AlertsCreator {
         if (context == null || text == null) {
             return null;
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
         builder.setTitle(title == null ? LocaleController.getString(R.string.AppName) : title);
         builder.setMessage(text);
         if (positiveButton == null) {
@@ -830,6 +832,161 @@ public class AlertsCreator {
             });
         }
         return builder;
+    }
+
+    public static void createStoriesAlbumEnterNameForCreate(Context context, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider, MessagesStorage.StringCallback whenDone) {
+        createStoriesAlbumEnterName(context, fragment, getString(R.string.StoriesAlbumCreateNew), getString(R.string.StoriesAlbumAddHint), getString(R.string.StoriesAlbumTitleInputHint), null, getString(R.string.Create), resourcesProvider, whenDone);
+    }
+
+    public static void createStoriesAlbumEnterNameForRename(Context context, BaseFragment fragment, String oldName, Theme.ResourcesProvider resourcesProvider, MessagesStorage.StringCallback whenDone) {
+        createStoriesAlbumEnterName(context, fragment, getString(R.string.StoriesAlbumRename), getString(R.string.StoriesAlbumRenameHint), getString(R.string.StoriesAlbumTitleInputHint), oldName, getString(R.string.Rename), resourcesProvider, whenDone);
+    }
+
+    public static void createStoriesAlbumEnterName(Context context, BaseFragment fragment, final String title, final String info, final String hint, final String name, String positiveButton, Theme.ResourcesProvider resourcesProvider, MessagesStorage.StringCallback whenDone) {
+        final Activity activity = AndroidUtilities.findActivity(context);
+        final View currentFocus = activity != null ? activity.getCurrentFocus() : null;
+
+        final AlertDialog[] dialog = new AlertDialog[1];
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
+        builder.setTitle(title == null ? LocaleController.getString(R.string.AppName) : title);
+        builder.setMessage(info);
+
+        final int MAX_LENGTH = 12;
+        EditTextCaption editText = new EditTextCaption(context, resourcesProvider) {
+            AnimatedColor limitColor = new AnimatedColor(this);
+            private int limitCount;
+            AnimatedTextView.AnimatedTextDrawable limit = new AnimatedTextView.AnimatedTextDrawable(false, true, true); {
+                limit.setAnimationProperties(.2f, 0, 160, CubicBezierInterpolator.EASE_OUT_QUINT);
+                limit.setTextSize(dp(15.33f));
+                limit.setCallback(this);
+                limit.setGravity(Gravity.RIGHT);
+            }
+
+            @Override
+            protected boolean verifyDrawable(@NonNull Drawable who) {
+                return who == limit || super.verifyDrawable(who);
+            }
+
+            @Override
+            protected void onTextChanged(CharSequence text, int start, int lengthBefore, int lengthAfter) {
+                super.onTextChanged(text, start, lengthBefore, lengthAfter);
+
+                if (limit != null) {
+                    limitCount = MAX_LENGTH - text.length();
+                    limit.cancelAnimation();
+                    limit.setText(limitCount > 4 ? "" : "" + limitCount);
+                }
+            }
+
+            @Override
+            protected void dispatchDraw(Canvas canvas) {
+                super.dispatchDraw(canvas);
+
+                limit.setTextColor(limitColor.set(Theme.getColor(limitCount < 0 ? Theme.key_text_RedRegular : Theme.key_dialogSearchHint, resourcesProvider)));
+                limit.setBounds(getScrollX(), 0, getScrollX() + getWidth(), getHeight());
+                limit.draw(canvas);
+            }
+        };
+        editText.lineYFix = true;
+        editText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                String text = editText.getText().toString();
+                if (text.length() > MAX_LENGTH) {
+                    AndroidUtilities.shakeView(editText);
+                    return true;
+                }
+
+                whenDone.run(text);
+
+                if (dialog[0] != null) {
+                    dialog[0].dismiss();
+                }
+                if (currentFocus != null) {
+                    currentFocus.requestFocus();
+                }
+                return true;
+            }
+            return false;
+        });
+        // MediaDataController.getInstance(currentAccount).fetchNewEmojiKeywords(AndroidUtilities.getCurrentKeyboardLanguage(), true);
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        editText.setHintColor(Theme.getColor(Theme.key_groupcreate_hintText, resourcesProvider));
+        editText.setHintText(hint);
+        editText.setFocusable(true);
+        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        editText.setLineColors(Theme.getColor(Theme.key_windowBackgroundWhiteInputField, resourcesProvider), Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated, resourcesProvider), Theme.getColor(Theme.key_text_RedRegular, resourcesProvider));
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        editText.setBackgroundDrawable(null);
+        editText.setPadding(0, dp(6), 0, dp(6));
+        editText.setText(name);
+
+        editText.addTextChangedListener(new TextWatcher() {
+            boolean ignoreTextChange;
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (ignoreTextChange) {
+                    return;
+                }
+                if (s.length() > MAX_LENGTH) {
+                    ignoreTextChange = true;
+                    s.delete(MAX_LENGTH, s.length());
+                    AndroidUtilities.shakeView(editText);
+                    try {
+                        editText.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                    } catch (Exception ignore) {}
+                    ignoreTextChange = false;
+                }
+            }
+        });
+
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.VERTICAL);
+
+        //editText.setText(editing);
+        container.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 0, 24, 10));
+        builder.makeCustomMaxHeight();
+        builder.setView(container);
+        builder.setWidth(dp(292));
+
+        builder.setPositiveButton(positiveButton, (dialogInterface, i) -> {
+            String text = editText.getText().toString().trim();
+            if (text.length() > MAX_LENGTH || text.isEmpty()) {
+                AndroidUtilities.shakeView(editText);
+                return;
+            }
+
+            whenDone.run(text);
+
+            dialogInterface.dismiss();
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), (dialogInterface, i) -> {
+            dialogInterface.dismiss();
+        });
+
+        dialog[0] = builder.create();
+        if (fragment != null) {
+            AndroidUtilities.requestAdjustNothing(activity, fragment.getClassGuid());
+        }
+        dialog[0].setOnDismissListener(d -> {
+            AndroidUtilities.hideKeyboard(editText);
+            if (fragment != null) {
+                AndroidUtilities.requestAdjustResize(activity, fragment.getClassGuid());
+            }
+        });
+        dialog[0].setOnShowListener(d -> {
+            editText.requestFocus();
+            AndroidUtilities.showKeyboard(editText);
+        });
+        dialog[0].show();
+
+        dialog[0].setDismissDialogByButtons(false);
+        editText.setSelection(editText.getText().length());
     }
 
     public static Dialog showSimpleAlert(BaseFragment baseFragment, final String text) {
@@ -1835,9 +1992,10 @@ public class AlertsCreator {
                 final long balance = StarsController.getInstance(currentAccount).getBalance().amount;
                 if (balance < totalPrice) {
                     if (activity == null) return;
-                    new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, totalPrice, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogIds.get(0)), () -> {
+                    final long dialogId = dialogIds.get(0);
+                    new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, totalPrice, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogId), () -> {
                         confirmed.run(prices);
-                    }).show();
+                    }, dialogId).show();
                 } else {
                     confirmed.run(prices);
                 }
@@ -1894,7 +2052,7 @@ public class AlertsCreator {
                     if (activity == null) return;
                     new StarsIntroActivity.StarsNeededSheet(activity, resourcesProvider, price, StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, DialogObject.getShortName(currentAccount, dialogId), () -> {
                         confirmedPrice.run(send_paid_messages_stars);
-                    }).show();
+                    }, dialogId).show();
                 } else {
                     confirmedPrice.run(send_paid_messages_stars);
                 }
@@ -7658,5 +7816,24 @@ public class AlertsCreator {
 
         sheet.fixNavigationBar();
         sheet.show();
+    }
+
+    public static void showGiftThemeApplyConfirm(Context context, Theme.ResourcesProvider resourcesProvider, int currentAccount, TL_stars.StarGift gift, long dialogId, Runnable onConfirm) {
+        TLObject user = MessagesController.getInstance(currentAccount).getUserOrChat(dialogId);
+        final LinearLayout topView = new LinearLayout(context);
+        topView.setOrientation(LinearLayout.VERTICAL);
+        topView.addView(new StarGiftSheet.GiftThemeReuseTopView(context, gift, user), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, -4, 0, 0));
+        final TextView textView = new TextView(context);
+        textView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        textView.setText(AndroidUtilities.replaceTags(formatString(R.string.GiftThemesSetInReuseInfo, DialogObject.getDialogTitle(user))));
+        topView.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 24, 0, 24, 4));
+        new AlertDialog.Builder(context, resourcesProvider)
+            .setView(topView)
+            .setPositiveButton(getString(R.string.GiftThemesSetInReuseConfirm), (di, w) -> {
+                onConfirm.run();
+            })
+            .setNegativeButton(getString(R.string.Cancel), null)
+            .show();
     }
 }

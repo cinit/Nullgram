@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2019-2025 qwq233 <qwq233@qwq2333.top>
+ * https://github.com/qwq233/Nullgram
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 2 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package org.telegram.ui.Stars;
 
 import static org.telegram.messenger.AndroidUtilities.dp;
@@ -134,6 +151,8 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
             balanceCloud.setScaleX(0.6f);
             balanceCloud.setScaleY(0.6f);
             balanceCloud.setAlpha(0.0f);
+            balanceCloud.setEnabled(false);
+            balanceCloud.setClickable(false);
             container.addView(balanceCloud, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 48, 0, 0));
             ScaleStateListAnimator.apply(balanceCloud);
             balanceCloud.setOnClickListener(v -> {
@@ -177,6 +196,8 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
         closeView.setOnClickListener(v -> dismiss());
         headerLayout.addView(closeView, LayoutHelper.createLinear(48, 48, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 6, 0));
 
+        starsCountEditField = new EditTextBoldCursor(context);
+
         /* Tabs */
 
         if (allowTON) {
@@ -189,7 +210,8 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
                         AmountUtils.Currency.STARS :
                         AmountUtils.Currency.TON;
 
-                setAmount(AmountUtils.Amount.fromDecimal(inputAmount.asDecimal(), currency), true, false, true);
+                setAmount(AmountUtils.Amount.fromNano(0, currency), true, false, true);
+                starsCountEditField.setText("");
             });
             layout.addView(currencyTabsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 18, 0, 18, 12));
         } else {
@@ -206,7 +228,6 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
 
         {
             starsCountEditOutline = new OutlineTextContainerView(context);
-            starsCountEditField = new EditTextBoldCursor(context);
             starsCountEditField.setCursorSize(dp(20));
             starsCountEditField.setCursorWidth(1.5f);
             starsCountEditField.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -320,7 +341,7 @@ public class MessageSuggestionOfferSheet extends BottomSheet {
 
             if (!isMonoForumAdmin && (balance == null || balance.asNano() < inputAmount.asNano())) {
                 if (inputAmount.currency == AmountUtils.Currency.STARS) {
-                    new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, inputAmount.asDecimal(), StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, ForumUtilities.getMonoForumTitle(currentAccount, dialogId, true), null).show();
+                    new StarsIntroActivity.StarsNeededSheet(context, resourcesProvider, inputAmount.asDecimal(), StarsIntroActivity.StarsNeededSheet.TYPE_PRIVATE_MESSAGE, ForumUtilities.getMonoForumTitle(currentAccount, dialogId, true), null, dialogId).show();
                 } else if (inputAmount.currency == AmountUtils.Currency.TON){
                     new TONIntroActivity.StarsNeededSheet(context, resourcesProvider, inputAmount, true, null).show();
                 }
